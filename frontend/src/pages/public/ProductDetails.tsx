@@ -9,6 +9,7 @@ import { useAuth } from '../../services/auth.context';
 export function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
@@ -147,9 +148,7 @@ export function ProductDetails() {
     return `LKR ${n.toLocaleString()}`;
   }
 
-  function handleAddToCart() {
-    // auth check via context
-    const { user } = useAuth();
+  async function handleAddToCart() {
     if (!user) {
       navigate('/login');
       return;
@@ -182,21 +181,29 @@ export function ProductDetails() {
       quantity,
     };
 
-    // For now, do not call Cart API — show placeholder message
-    console.log('Prepared AddToCart payload:', payload);
-    alert('Cart functionality will be available soon.');
+    try {
+      await import('../../services/cart.service').then(m => m.addItem({ productId: payload.productId!, variantId: payload.variantId ?? null, quantity: payload.quantity }));
+      alert('Item added to cart');
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.response?.data?.message || err?.message || 'Unable to add item to cart');
+    }
   }
 
-  function handleAddToWishlist() {
+  async function handleAddToWishlist() {
     const token = localStorage.getItem('auth_token');
     if (!token) {
       navigate('/login');
       return;
     }
 
-    const payload = { productId: product?.id };
-    console.log('Prepared AddToWishlist payload:', payload);
-    alert('Wishlist functionality will be available soon.');
+    try {
+      await import('../../services/wishlist.service').then(m => m.addItem(product?.id!));
+      alert('Added to wishlist');
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.response?.data?.message || err?.message || 'Unable to add to wishlist');
+    }
   }
 
   if (loading) {
