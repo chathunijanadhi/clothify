@@ -126,11 +126,12 @@ export const createProduct = async (req: Request, res: Response) => {
       categoryName: body.categoryName ?? null,
       brand: body.brand ?? null,
       price: Number(body.price),
-      discountPercentage: Number(body.discountPercentage ?? 0),
+      discountPercentage: 0,
       stockQuantity: Number(body.stockQuantity ?? 0),
       sizes: Array.isArray(body.sizes) ? body.sizes.map((item: unknown) => String(item)) : [],
       colors: Array.isArray(body.colors) ? body.colors.map((item: unknown) => String(item)) : [],
-      images: Array.isArray(body.images) ? body.images.map((item: unknown) => String(item)) : [],
+      images: Array.isArray(body.images) ? body.images : normalizeImageEntries(body.images),
+      variants: Array.isArray(body.variants) ? body.variants : [],
       isActive: body.isActive ?? true,
     };
 
@@ -154,11 +155,12 @@ export const updateProduct = async (req: Request, res: Response) => {
       categoryName: req.body.categoryName,
       brand: req.body.brand,
       price: req.body.price !== undefined ? Number(req.body.price) : undefined,
-      discountPercentage: req.body.discountPercentage !== undefined ? Number(req.body.discountPercentage) : undefined,
+      discountPercentage: 0,
       stockQuantity: req.body.stockQuantity !== undefined ? Number(req.body.stockQuantity) : undefined,
       sizes: Array.isArray(req.body.sizes) ? req.body.sizes.map((item: unknown) => String(item)) : undefined,
       colors: Array.isArray(req.body.colors) ? req.body.colors.map((item: unknown) => String(item)) : undefined,
-      images: Array.isArray(req.body.images) ? req.body.images.map((item: unknown) => String(item)) : undefined,
+      images: normalizeImageEntries(req.body.images),
+      variants: Array.isArray(req.body.variants) ? req.body.variants : undefined,
       isActive: req.body.isActive,
     });
 
@@ -185,6 +187,16 @@ export const deleteProduct = async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, message: 'Unable to delete product', error: error.message || 'SERVER_ERROR' });
   }
 };
+
+function normalizeImageEntries(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item)).filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value.split(/[\n,]/).map((item) => item.trim()).filter(Boolean);
+  }
+  return [];
+}
 
 function normalizeString(value: unknown): string | undefined {
   if (Array.isArray(value)) return String(value[0] ?? '').trim() || undefined;

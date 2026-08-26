@@ -51,6 +51,12 @@ export interface ProductVariantRow {
   updated_at: Date;
 }
 
+export interface ProductVariantInput {
+  size: string;
+  color: string;
+  stockQuantity: number;
+}
+
 export const listCategories = async (): Promise<CategoryRow[]> => {
   const res = await pool.query('SELECT * FROM categories WHERE is_active = true ORDER BY name ASC');
   return res.rows;
@@ -130,6 +136,7 @@ export const createProduct = async (payload: {
   sizes?: string[];
   colors?: string[];
   images?: string[];
+  variants?: Array<{ size?: string; color?: string; stockQuantity?: number; colors?: Array<{ color?: string; stockQuantity?: number; stock?: number }> }>;
   isActive?: boolean;
 }): Promise<ProductRow> => {
   const categoryId = payload.categoryId || (payload.categoryName ? (await findCategoryByName(payload.categoryName))?.id : null);
@@ -137,24 +144,29 @@ export const createProduct = async (payload: {
 
   const name = payload.name.trim();
   const price = Number(payload.price);
-  const discountPercentage = Number(payload.discountPercentage ?? 0);
+  const discountPercentage = 0;
+  const normalizedVariants = normalizeVariantEntries(payload.variants, payload.sizes ?? [], payload.colors ?? []);
   const stockQuantity = Number(payload.stockQuantity ?? 0);
-  const finalPrice = Number((price * (1 - discountPercentage / 100)).toFixed(2));
+  const totalVariantStock = normalizedVariants.reduce((sum, variant) => sum + Number(variant.stockQuantity || 0), 0);
+  const finalStock = normalizedVariants.length > 0 ? totalVariantStock : stockQuantity;
+  const finalPrice = Number(price.toFixed(2));
   const productId = payload.id || crypto.randomUUID();
-  const slug = slugify(name);
+  const slug = await ensureUniqueProductSlug(name, productId);
 
   const productRes = await pool.query(
     `INSERT INTO products (
       id, category_id, name, slug, description, brand, price, discount_percentage,
       final_price, stock_quantity, rating, review_count, is_active, created_at, updated_at
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 0, 0, $11, NOW(), NOW()) RETURNING *`,
-    [productId, categoryId, name, slug, payload.description ?? null, payload.brand ?? null, price, discountPercentage, finalPrice, stockQuantity, payload.isActive ?? true]
+    [productId, categoryId, name, slug, payload.description ?? null, payload.brand ?? null, price, discountPercentage, finalPrice, finalStock, payload.isActive ?? true]
   );
 
   const created = productRes.rows[0];
 
   await insertProductImages(productId, payload.images ?? []);
-  await insertProductVariants(productId, payload.sizes ?? [], payload.colors ?? [], stockQuantity, slug);
+  await insertProductVariants(productId, normalizedVariants, slug);
+  const recalculatedStock = await recalculateProductStock(productId);
+  created.stock_quantity = recalculatedStock;
 
   return created;
 };
@@ -171,6 +183,7 @@ export const updateProduct = async (id: string, payload: {
   sizes?: string[];
   colors?: string[];
   images?: string[];
+  variants?: Array<{ size?: string; color?: string; stockQuantity?: number; colors?: Array<{ color?: string; stockQuantity?: number; stock?: number }> }>;
   isActive?: boolean;
 }): Promise<ProductRow | null> => {
   const existing = await getProductById(id);
@@ -181,10 +194,13 @@ export const updateProduct = async (id: string, payload: {
   const description = payload.description ?? existing.description;
   const brand = payload.brand ?? existing.brand;
   const price = Number(payload.price ?? existing.price);
-  const discountPercentage = Number(payload.discountPercentage ?? existing.discount_percentage);
+  const discountPercentage = 0;
+  const normalizedVariants = payload.variants !== undefined ? normalizeVariantEntries(payload.variants, payload.sizes ?? [], payload.colors ?? []) : undefined;
   const stockQuantity = Number(payload.stockQuantity ?? existing.stock_quantity);
-  const finalPrice = Number((price * (1 - discountPercentage / 100)).toFixed(2));
+  const finalStock = normalizedVariants && normalizedVariants.length > 0 ? normalizedVariants.reduce((sum, variant) => sum + Number(variant.stockQuantity || 0), 0) : stockQuantity;
+  const finalPrice = Number(price.toFixed(2));
   const isActive = payload.isActive ?? existing.is_active;
+  const nextSlug = await ensureUniqueProductSlug(name, id);
 
   const res = await pool.query(
     `UPDATE products
@@ -192,7 +208,7 @@ export const updateProduct = async (id: string, payload: {
          discount_percentage = $7, final_price = $8, stock_quantity = $9, is_active = $10, updated_at = NOW()
      WHERE id = $11
      RETURNING *`,
-    [categoryId, name, slugify(name), description, brand, price, discountPercentage, finalPrice, stockQuantity, isActive, id]
+    [categoryId, name, nextSlug, description, brand, price, discountPercentage, finalPrice, finalStock, isActive, id]
   );
 
   if (payload.images !== undefined) {
@@ -200,9 +216,20 @@ export const updateProduct = async (id: string, payload: {
     await insertProductImages(id, payload.images ?? []);
   }
 
-  if (payload.sizes !== undefined || payload.colors !== undefined) {
+  if (normalizedVariants !== undefined) {
     await pool.query('DELETE FROM product_variants WHERE product_id = $1', [id]);
-    await insertProductVariants(id, payload.sizes ?? [], payload.colors ?? [], stockQuantity, slugify(name));
+    await insertProductVariants(id, normalizedVariants, nextSlug);
+    const recalculatedStock = await recalculateProductStock(id);
+    if (res.rows[0]) {
+      res.rows[0].stock_quantity = recalculatedStock;
+    }
+  } else if (payload.sizes !== undefined || payload.colors !== undefined) {
+    await pool.query('DELETE FROM product_variants WHERE product_id = $1', [id]);
+    await insertProductVariants(id, normalizeVariantEntries([], payload.sizes ?? [], payload.colors ?? []), nextSlug);
+    const recalculatedStock = await recalculateProductStock(id);
+    if (res.rows[0]) {
+      res.rows[0].stock_quantity = recalculatedStock;
+    }
   }
 
   return res.rows[0] || null;
@@ -227,24 +254,85 @@ async function insertProductImages(productId: string, imageUrls: string[]): Prom
 
 async function insertProductVariants(
   productId: string,
-  sizes: string[],
-  colors: string[],
-  stockQuantity: number,
-  slug: string
+  variants: ProductVariantInput[] | string[],
+  slug: string,
+  stockQuantity?: number
 ): Promise<void> {
-  const sizeList = sizes.length > 0 ? sizes : ['N/A'];
-  const colorList = colors.length > 0 ? colors : ['N/A'];
+  const flatVariants = Array.isArray(variants) && variants.length > 0 && typeof variants[0] === 'object'
+    ? (variants as ProductVariantInput[])
+    : (() => {
+        const sizeList = (variants as string[]).length > 0 ? (variants as string[]) : ['N/A'];
+        const colorList = stockQuantity !== undefined ? ['N/A'] : ['N/A'];
+        return [{ size: sizeList[0], color: colorList[0], stockQuantity: stockQuantity ?? 0 }];
+      })();
 
-  for (const size of sizeList) {
-    for (const color of colorList) {
-      await pool.query(
-        `INSERT INTO product_variants (id, product_id, size, color, sku, stock_quantity, is_active, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, true, NOW(), NOW())
-         ON CONFLICT (product_id, size, color) DO UPDATE SET stock_quantity = EXCLUDED.stock_quantity, updated_at = NOW()`,
-        [crypto.randomUUID(), productId, size, color, `${slug}-${size}-${color}`.toUpperCase(), stockQuantity]
-      );
+  const normalizedEntries = flatVariants.filter((variant) => !!variant && typeof variant === 'object' && String(variant.size ?? '').trim() && String(variant.color ?? '').trim());
+
+  if (!normalizedEntries.length) return;
+
+  for (const variant of normalizedEntries) {
+    const size = String(variant.size).trim();
+    const color = String(variant.color).trim();
+    const variantQty = Number(variant.stockQuantity ?? 0);
+    await pool.query(
+      `INSERT INTO product_variants (id, product_id, size, color, sku, stock_quantity, is_active, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, true, NOW(), NOW())
+        ON CONFLICT (product_id, size, color) DO UPDATE SET stock_quantity = EXCLUDED.stock_quantity, updated_at = NOW()`,
+      [crypto.randomUUID(), productId, size, color, `${slug}-${size}-${color}`.toUpperCase(), variantQty]
+    );
+  }
+}
+
+function normalizeVariantEntries(
+  variantEntries?: Array<{ size?: string; color?: string; stockQuantity?: number; stock?: number; colors?: Array<{ color?: string; stockQuantity?: number; stock?: number }> }>,
+  sizeList: string[] = [],
+  colorList: string[] = []
+): ProductVariantInput[] {
+  const entries: ProductVariantInput[] = [];
+  const normalizedVariantEntries = Array.isArray(variantEntries) ? variantEntries : [];
+
+  for (const item of normalizedVariantEntries) {
+    if (!item || typeof item !== 'object') continue;
+
+    if (Array.isArray(item.colors) && item.colors.length) {
+      const size = String(item.size ?? '').trim();
+      if (!size) continue;
+      for (const colorEntry of item.colors) {
+        const color = String(colorEntry?.color ?? '').trim();
+        if (!color) continue;
+        entries.push({
+         size,
+         color,
+         stockQuantity: Number(colorEntry?.stockQuantity ?? colorEntry?.stock ?? 0),
+        });
+      }
+      continue;
+    }
+
+    const size = String(item.size ?? '').trim();
+    const color = String(item.color ?? '').trim();
+    if (!size || !color) continue;
+    entries.push({
+      size,
+      color,
+      stockQuantity: Number(item.stockQuantity ?? item.stock ?? 0),
+    });
+  }
+
+  const fallbackSizes = sizeList.filter((size) => String(size).trim());
+  const fallbackColors = colorList.filter((color) => String(color).trim());
+  if (entries.length === 0 && fallbackSizes.length && fallbackColors.length) {
+    for (const size of fallbackSizes) {
+      for (const color of fallbackColors) {
+        entries.push({ size, color, stockQuantity: 0 });
+      }
     }
   }
+
+  return entries.filter((entry, index, array) => {
+    const key = `${entry.size}::${entry.color}`.toLowerCase();
+    return array.findIndex((candidate) => `${candidate.size}::${candidate.color}`.toLowerCase() === key) === index;
+  });
 }
 
 function buildWhereClause(filters: Record<string, unknown>) {
@@ -320,6 +408,24 @@ function resolveSort(sort?: string): string {
   }
 }
 
+async function ensureUniqueProductSlug(name: string, excludeProductId?: string): Promise<string> {
+  const baseName = slugify(name) || 'product';
+  let candidate = baseName.slice(0, 200);
+  let suffix = 1;
+
+  while (true) {
+    const result = await pool.query(
+      'SELECT id FROM products WHERE slug = $1 AND ($2::uuid IS NULL OR id <> $2) LIMIT 1',
+      [candidate, excludeProductId ?? null]
+    );
+
+    if (!result.rows[0]) return candidate;
+
+    candidate = `${baseName.slice(0, 190)}-${suffix}`;
+    suffix += 1;
+  }
+}
+
 function slugify(value: string): string {
   return value
     .toLowerCase()
@@ -328,4 +434,14 @@ function slugify(value: string): string {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .slice(0, 120);
+}
+
+async function recalculateProductStock(productId: string): Promise<number> {
+  const res = await pool.query(
+    'SELECT COALESCE(SUM(stock_quantity), 0)::int AS total FROM product_variants WHERE product_id = $1',
+    [productId]
+  );
+  const total = Number(res.rows[0]?.total ?? 0);
+  await pool.query('UPDATE products SET stock_quantity = $1, updated_at = NOW() WHERE id = $2', [total, productId]);
+  return total;
 }
