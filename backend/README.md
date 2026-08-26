@@ -1,6 +1,6 @@
-# Online Clothing Store — Backend
+# Clothify — Backend
 
-This folder contains the Node.js + Express + TypeScript backend for the Online Clothing Store project.
+This folder contains the Node.js + Express + TypeScript backend for the Clothify project.
 
 Quick start (after setting up environment variables):
 
