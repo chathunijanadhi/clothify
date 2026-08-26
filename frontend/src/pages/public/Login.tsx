@@ -1,24 +1,30 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../services/auth.context';
 
 export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
 
-  async function handleSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    if (user) {
+      navigate(user.role === 'admin' ? '/admin/dashboard' : '/customer/dashboard');
+    }
+  }, [user, navigate]);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     try {
       await login(email, password);
-      navigate('/');
-    } catch (err: any) {
-      setError(err?.message || 'Login failed');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Login failed';
+      setError(message);
     }
   }
 

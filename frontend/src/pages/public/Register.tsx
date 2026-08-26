@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../services/auth.context';
 
 export function Register() {
@@ -11,10 +11,16 @@ export function Register() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const { register } = useAuth();
+  const { register, user } = useAuth();
   const navigate = useNavigate();
 
-  async function handleSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    if (user) {
+      navigate(user.role === 'admin' ? '/admin/dashboard' : '/customer/dashboard');
+    }
+  }, [user, navigate]);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     if (!fullName || !email || !password) {
@@ -28,9 +34,9 @@ export function Register() {
 
     try {
       await register({ fullName, email, phone, password, confirmPassword });
-      navigate('/');
-    } catch (err: any) {
-      setError(err?.message || 'Registration failed');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Registration failed';
+      setError(message);
     }
   }
 

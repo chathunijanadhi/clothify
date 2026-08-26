@@ -6,6 +6,7 @@ export interface User {
   id: string;
   fullName?: string | null;
   email: string;
+  phone?: string | null;
   role: string;
   isActive?: boolean;
 }
@@ -32,14 +33,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (mounted) setLoading(false);
         return;
       }
-      // set axios header
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       try {
         const u = await authService.me();
         if (!mounted) return;
-        setUser(u as any);
-      } catch (err) {
-        // failed to restore token — clear it
+        setUser(u as User);
+      } catch {
         localStorage.removeItem('auth_token');
         delete api.defaults.headers.common['Authorization'];
         setUser(null);
@@ -57,8 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     const result = await authService.login({ email, password });
     if (!result) throw new Error('Login failed');
-    const { token, user: u } = result as any;
-    // persist token and set header
+    const { token, user: u } = result as { token: string; user: User };
     localStorage.setItem('auth_token', token);
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     setUser(u as User);
@@ -67,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (payload: { fullName?: string; email: string; phone?: string; password: string; confirmPassword?: string }) => {
     const result = await authService.register(payload);
     if (!result) throw new Error('Register failed');
-    const { token, user: u } = result as any;
+    const { token, user: u } = result as { token: string; user: User };
     localStorage.setItem('auth_token', token);
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     setUser(u as User);
@@ -84,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
