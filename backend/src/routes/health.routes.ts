@@ -5,7 +5,7 @@ const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
   // Basic API health
-  const base = { success: true, message: 'Online Clothing Store API is running' };
+  const base = { success: true, message: 'Clothify API is running' };
 
   try {
     // Try a lightweight query to verify DB connectivity
