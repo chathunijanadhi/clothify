@@ -6,7 +6,7 @@ export function Footer() {
     <footer className="site-footer">
       <div className="container footer-grid">
         <div>
-          <h3>FashionHub</h3>
+          <h3>Clothify</h3>
           <p>Modern essentials for everyday confidence.</p>
           <div className="social-row">
             <a href="https://instagram.com" aria-label="Instagram"><Globe size={18} /></a>
@@ -44,7 +44,7 @@ export function Footer() {
           </ul>
         </div>
       </div>
-      <div className="footer-bottom">© 2026 FashionHub. All rights reserved.</div>
+      <div className="footer-bottom">© 2026 Clothify. All rights reserved.</div>
     </footer>
   );
 }

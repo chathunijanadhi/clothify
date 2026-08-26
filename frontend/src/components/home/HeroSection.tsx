@@ -7,8 +7,8 @@ export function HeroSection() {
       <div className="container hero-grid">
         <div className="hero-copy">
           <span className="eyebrow">New Season Collection</span>
-          <h1>Style That Defines You</h1>
-          <p>Discover the latest fashion collections for every occasion, from everyday essentials to statement pieces.</p>
+          <h1>Wear Your Style</h1>
+          <p>Discover the latest trends and timeless essentials at Clothify. Find the perfect pieces to express your style, your way.</p>
           <div className="hero-actions">
             <Link to="/products" className="btn btn-primary">Shop Now <ArrowRight size={18} /></Link>
             <Link to="/products" className="btn btn-secondary">Explore Collection</Link>
