@@ -34,6 +34,7 @@ export const createProduct = async (payload: {
   description?: string | null;
   categoryId?: string | null;
   categoryName?: string | null;
+  segment?: string | null;
   brand?: string | null;
   price: number;
   discountPercentage?: number;

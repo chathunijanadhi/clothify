@@ -8,7 +8,17 @@ import * as productService from '../../services/product.service';
 export function Products() {
   const [searchParams] = useSearchParams();
   const initialCategory = searchParams.get('category') ?? 'All';
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+  const initialSegment = searchParams.get('segment') ?? 'All';
+  const [selectedType, setSelectedType] = useState(initialCategory);
+  const [selectedSegment, setSelectedSegment] = useState(initialSegment);
+
+  // keep component state in sync with URL query params (so navbar navigation updates filters)
+  useEffect(() => {
+    const s = searchParams.get('segment') ?? 'All';
+    const c = searchParams.get('category') ?? 'All';
+    setSelectedSegment(s);
+    setSelectedType(c);
+  }, [searchParams]);
   const [sortBy, setSortBy] = useState('featured');
   const [search, setSearch] = useState('');
 
@@ -24,7 +34,10 @@ export function Products() {
       setLoading(true);
       setError(null);
       try {
-        const [products, cats] = await Promise.all([productService.getProducts({ limit: 100 }), productService.getCategories()]);
+        const params: Record<string, unknown> = { limit: 100 };
+        if (selectedSegment && selectedSegment !== 'All') params.segment = selectedSegment;
+        if (selectedType && selectedType !== 'All') params.category = selectedType;
+        const [products, cats] = await Promise.all([productService.getProducts(params), productService.getCategories()]);
         if (!mounted) return;
         setBackendProducts(products);
         setCategories(cats);
@@ -41,7 +54,7 @@ export function Products() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [selectedSegment, selectedType]);
 
   // map backend products to UIProduct
   const uiProducts: UIProduct[] = useMemo(() => {
@@ -70,9 +83,9 @@ export function Products() {
 
   const filteredProducts = useMemo(() => {
     const list = uiProducts.filter((product) => {
-      const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+      const matchesType = selectedType === 'All' || product.category === selectedType;
       const matchesSearch = !search || product.name.toLowerCase().includes(search.toLowerCase());
-      return matchesCategory && matchesSearch;
+      return matchesType && matchesSearch;
     });
 
     switch (sortBy) {
@@ -85,7 +98,7 @@ export function Products() {
       default:
         return list;
     }
-  }, [uiProducts, search, selectedCategory, sortBy]);
+  }, [uiProducts, search, selectedType, sortBy]);
 
   return (
     <div className="page-shell">
@@ -119,12 +132,27 @@ export function Products() {
             </div>
 
             <div className="filter-group">
-              <label>Category</label>
-              <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)}>
+              <label>Segment</label>
+              <select value={selectedSegment} onChange={(event) => setSelectedSegment(event.target.value)}>
                 <option value="All">All</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
+                <option value="Men">Men</option>
+                <option value="Women">Women</option>
+                <option value="Kids">Kids</option>
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label>Type</label>
+              <select value={selectedType} onChange={(event) => setSelectedType(event.target.value)}>
+                <option value="All">All</option>
+                <option value="T-Shirts">T-Shirts</option>
+                <option value="Shirts">Shirts</option>
+                <option value="Dresses">Dresses</option>
+                <option value="Jackets">Jackets</option>
+                <option value="Jeans">Jeans</option>
+                <option value="Trousers">Trousers</option>
+                <option value="Skirts">Skirts</option>
+                <option value="Blouses">Blouses</option>
               </select>
             </div>
 
