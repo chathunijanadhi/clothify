@@ -21,17 +21,13 @@ export function HeroSection() {
         </div>
 
         <div className="hero-visual">
-          <div className="hero-card card-one">
-            <span>Summer Edit</span>
-            <strong>Up to 30% off</strong>
-          </div>
           <div className="hero-card card-two">
             <span>Fresh Drop</span>
             <strong>Trending now</strong>
           </div>
           <div className="hero-image-panel">
             <img
-              src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=80"
+              src="https://res.cloudinary.com/efjuzuge/image/upload/v1787853264/freestocks-_3Q3tsJ01nc-unsplash_1.jpg"
               alt="Fashion model"
             />
           </div>
