@@ -1,14 +1,14 @@
 import { Link } from 'react-router-dom';
 
 const categories = [
-  { name: 'Women', image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=700&q=80' },
-  { name: 'Men', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=700&q=80' },
-  { name: 'Kids', image: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?auto=format&fit=crop&w=700&q=80' },
-  { name: 'Dresses', image: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=700&q=80' },
-  { name: 'Shirts', image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=700&q=80' },
-  { name: 'T-Shirts', image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=700&q=80' },
-  { name: 'Jeans', image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=700&q=80' },
-  { name: 'Accessories', image: 'https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&w=700&q=80' },
+  { name: 'Women', image: 'https://res.cloudinary.com/efjuzuge/image/upload/v1787853829/pexels-emrekeshavarz-19607463.jpg' },
+  { name: 'Men', image: 'https://res.cloudinary.com/efjuzuge/image/upload/v1787853838/behrouz-sasani-6OGml3UomZw-unsplash.jpg' },
+  { name: 'Kids', image: 'https://res.cloudinary.com/efjuzuge/image/upload/v1787853796/kayan-baby-kPXq-jxhMkk-unsplash.jpg' },
+  { name: 'Dresses', image: 'https://res.cloudinary.com/efjuzuge/image/upload/v1787853772/pexels-rakesh-mondal-3337884-19152364.jpg' },
+  { name: 'Shirts', image: 'https://res.cloudinary.com/efjuzuge/image/upload/v1787853811/pexels-nguy-n-d-c-l-c-nguy-n-2150121692-35171075.jpg' },
+  { name: 'T-Shirts', image: 'https://res.cloudinary.com/efjuzuge/image/upload/v1787852199/clothify/h2wzzqnhgqmtsvznjvgq.jpg' },
+  { name: 'Jeans', image: 'https://res.cloudinary.com/efjuzuge/image/upload/v1787854402/full-length-cheerful-woman-denim-clothes-posing-white-wall.jpg' },
+  { name: 'Skirts', image: 'https://res.cloudinary.com/efjuzuge/image/upload/v1787853789/pexels-rajatsahuphotography-33317708.jpg' },
 ];
 
 export function CategorySection() {
