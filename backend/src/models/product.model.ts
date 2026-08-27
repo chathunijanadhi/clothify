@@ -1,6 +1,17 @@
 import crypto from 'crypto';
 import pool from '../config/database';
 
+// Ensure database schema compatibility: create 'segment' column if it's missing.
+// This makes upgrading the running app simpler without requiring a manual migration step.
+(async () => {
+  try {
+    await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS segment TEXT");
+  } catch (err) {
+    // Log but don't fail startup — operations can proceed and errors will surface on queries.
+    console.error('Warning: failed to ensure products.segment column exists', err?.message || err);
+  }
+})();
+
 export interface CategoryRow {
   id: string;
   name: string;
@@ -14,6 +25,8 @@ export interface CategoryRow {
 export interface ProductRow {
   id: string;
   category_id: string;
+  // new: primary audience/segment (e.g., Men, Women, Kids)
+  segment?: string | null;
   name: string;
   slug: string;
   description: string | null;
@@ -129,6 +142,8 @@ export const createProduct = async (payload: {
   description?: string | null;
   categoryId?: string | null;
   categoryName?: string | null;
+  // new: primary audience/segment (Men, Women, Kids)
+  segment?: string | null;
   brand?: string | null;
   price: number;
   discountPercentage?: number;
@@ -139,7 +154,22 @@ export const createProduct = async (payload: {
   variants?: Array<{ size?: string; color?: string; stockQuantity?: number; colors?: Array<{ color?: string; stockQuantity?: number; stock?: number }> }>;
   isActive?: boolean;
 }): Promise<ProductRow> => {
-  const categoryId = payload.categoryId || (payload.categoryName ? (await findCategoryByName(payload.categoryName))?.id : null);
+  let categoryId = payload.categoryId ?? null;
+  if (!categoryId && payload.categoryName) {
+    const found = await findCategoryByName(payload.categoryName);
+    if (found) {
+      categoryId = found.id;
+    } else {
+      // create category on the fly when admin supplies a category name that doesn't exist
+      const newCatId = crypto.randomUUID();
+      const catSlug = slugify(String(payload.categoryName));
+      await pool.query(
+        'INSERT INTO categories (id, name, slug, description, is_active, created_at, updated_at) VALUES ($1, $2, $3, NULL, true, NOW(), NOW())',
+        [newCatId, payload.categoryName, catSlug]
+      );
+      categoryId = newCatId;
+    }
+  }
   if (!categoryId) throw new Error('CATEGORY_NOT_FOUND');
 
   const name = payload.name.trim();
@@ -152,14 +182,15 @@ export const createProduct = async (payload: {
   const finalPrice = Number(price.toFixed(2));
   const productId = payload.id || crypto.randomUUID();
   const slug = await ensureUniqueProductSlug(name, productId);
+    const segment = payload.segment ?? null;
 
-  const productRes = await pool.query(
-    `INSERT INTO products (
-      id, category_id, name, slug, description, brand, price, discount_percentage,
-      final_price, stock_quantity, rating, review_count, is_active, created_at, updated_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 0, 0, $11, NOW(), NOW()) RETURNING *`,
-    [productId, categoryId, name, slug, payload.description ?? null, payload.brand ?? null, price, discountPercentage, finalPrice, finalStock, payload.isActive ?? true]
-  );
+    const productRes = await pool.query(
+      `INSERT INTO products (
+        id, category_id, segment, name, slug, description, brand, price, discount_percentage,
+        final_price, stock_quantity, rating, review_count, is_active, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 0, 0, $12, NOW(), NOW()) RETURNING *`,
+      [productId, categoryId, segment, name, slug, payload.description ?? null, payload.brand ?? null, price, discountPercentage, finalPrice, finalStock, payload.isActive ?? true]
+    );
 
   const created = productRes.rows[0];
 
@@ -189,7 +220,24 @@ export const updateProduct = async (id: string, payload: {
   const existing = await getProductById(id);
   if (!existing) return null;
 
-  const categoryId = payload.categoryId || (payload.categoryName ? (await findCategoryByName(payload.categoryName))?.id : existing.category_id);
+  let categoryId = payload.categoryId ?? null;
+  if (!categoryId && payload.categoryName) {
+    const found = await findCategoryByName(payload.categoryName);
+    if (found) {
+      categoryId = found.id;
+    } else {
+      const newCatId = crypto.randomUUID();
+      const catSlug = slugify(String(payload.categoryName));
+      await pool.query(
+        'INSERT INTO categories (id, name, slug, description, is_active, created_at, updated_at) VALUES ($1, $2, $3, NULL, true, NOW(), NOW())',
+        [newCatId, payload.categoryName, catSlug]
+      );
+      categoryId = newCatId;
+    }
+  }
+  if (!categoryId) {
+    categoryId = existing.category_id;
+  }
   const name = payload.name?.trim() || existing.name;
   const description = payload.description ?? existing.description;
   const brand = payload.brand ?? existing.brand;
@@ -204,11 +252,11 @@ export const updateProduct = async (id: string, payload: {
 
   const res = await pool.query(
     `UPDATE products
-     SET category_id = $1, name = $2, slug = $3, description = $4, brand = $5, price = $6,
-         discount_percentage = $7, final_price = $8, stock_quantity = $9, is_active = $10, updated_at = NOW()
-     WHERE id = $11
+     SET category_id = $1, segment = $2, name = $3, slug = $4, description = $5, brand = $6, price = $7,
+         discount_percentage = $8, final_price = $9, stock_quantity = $10, is_active = $11, updated_at = NOW()
+     WHERE id = $12
      RETURNING *`,
-    [categoryId, name, nextSlug, description, brand, price, discountPercentage, finalPrice, finalStock, isActive, id]
+    [categoryId, payload.segment ?? null, name, nextSlug, description, brand, price, discountPercentage, finalPrice, finalStock, isActive, id]
   );
 
   if (payload.images !== undefined) {
@@ -343,6 +391,11 @@ function buildWhereClause(filters: Record<string, unknown>) {
     const value = `%${String(filters.search).trim()}%`;
     params.push(value);
     clauses.push(`(LOWER(p.name) ILIKE $${params.length} OR LOWER(p.brand) ILIKE $${params.length} OR LOWER(c.name) ILIKE $${params.length})`);
+  }
+
+  if (filters.segment) {
+    params.push(String(filters.segment));
+    clauses.push(`LOWER(p.segment) = LOWER($${params.length})`);
   }
 
   if (filters.category) {

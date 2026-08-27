@@ -15,6 +15,7 @@ export const getProducts = async (req: Request, res: Response) => {
     const filters = {
       search: normalizeString(req.query.search),
       category: normalizeString(req.query.category),
+      segment: normalizeString(req.query.segment),
       brand: normalizeString(req.query.brand),
       minPrice: normalizeNumber(req.query.minPrice),
       maxPrice: normalizeNumber(req.query.maxPrice),
@@ -124,6 +125,7 @@ export const createProduct = async (req: Request, res: Response) => {
       description: body.description ?? null,
       categoryId: body.categoryId ?? null,
       categoryName: body.categoryName ?? null,
+      segment: body.segment ?? null,
       brand: body.brand ?? null,
       price: Number(body.price),
       discountPercentage: 0,
@@ -153,6 +155,7 @@ export const updateProduct = async (req: Request, res: Response) => {
       description: req.body.description,
       categoryId: req.body.categoryId,
       categoryName: req.body.categoryName,
+      segment: req.body.segment,
       brand: req.body.brand,
       price: req.body.price !== undefined ? Number(req.body.price) : undefined,
       discountPercentage: 0,
