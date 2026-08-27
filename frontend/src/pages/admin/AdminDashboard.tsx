@@ -372,7 +372,7 @@ export function AdminCatalogPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ name: '', brand: '', categoryName: 'Men', price: '', discountPercentage: '0', description: '' });
+  const [form, setForm] = useState({ name: '', brand: '', segment: 'All', categoryName: 'All', price: '', discountPercentage: '0', description: '' });
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [variantRows, setVariantRows] = useState<Array<{ size: string; colors: Array<{ color: string; stock: string }> }>>([
@@ -384,8 +384,12 @@ export function AdminCatalogPage() {
 
   const loadCatalog = async () => {
     try {
+      const params: Record<string, unknown> = { limit: 200 };
+      if (form.segment && form.segment !== 'All') params.segment = form.segment;
+      if (form.categoryName && form.categoryName !== 'All') params.category = form.categoryName;
+
       const [allProducts, allCategories] = await Promise.all([
-        productService.getProducts({ limit: 200 }),
+        productService.getProducts(params),
         productService.getCategories(),
       ]);
       setProducts(allProducts);
@@ -468,15 +472,16 @@ export function AdminCatalogPage() {
       await productService.createProduct({
         name: form.name,
         brand: form.brand || 'Clothify',
+        segment: form.segment,
         categoryName: form.categoryName,
         description: form.description || 'Admin created product',
         price: numericPrice,
-              discountPercentage: Number(form.discountPercentage ?? 0),
+        discountPercentage: Number(form.discountPercentage ?? 0),
         images: imageUrls,
         // keep backward-compatible string input removed; we now use uploaded images array
         variants,
       });
-      setForm({ name: '', brand: '', categoryName: 'Men', price: '', discountPercentage: '0', description: '' });
+      setForm({ name: '', brand: '', segment: 'Men', categoryName: 'T-Shirts', price: '', discountPercentage: '0', description: '' });
       setImageUrls([]);
       setVariantRows([{ size: '', colors: [{ color: '', stock: '0' }] }]);
       await loadCatalog();
@@ -515,16 +520,22 @@ export function AdminCatalogPage() {
         <div style={styles.productFormGrid}>
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Product name" style={styles.input} />
           <input value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} placeholder="Brand" style={styles.input} />
+          <select value={form.segment} onChange={(e) => setForm({ ...form, segment: e.target.value })} style={styles.input}>
+            <option value="Men">Men</option>
+            <option value="Women">Women</option>
+            <option value="Kids">Kids</option>
+          </select>
+
           <select value={form.categoryName} onChange={(e) => setForm({ ...form, categoryName: e.target.value })} style={styles.input}>
-            {categories.length ? categories.map((category) => (
-              <option key={category.id} value={category.name}>{category.name}</option>
-            )) : (
-              <>
-                <option value="Men">Men</option>
-                <option value="Women">Women</option>
-                <option value="Kids">Kids</option>
-              </>
-            )}
+            {/* fixed category types for the second filter */}
+            <option value="T-Shirts">T-Shirts</option>
+            <option value="Shirts">Shirts</option>
+            <option value="Dresses">Dresses</option>
+            <option value="Jackets">Jackets</option>
+            <option value="Jeans">Jeans</option>
+            <option value="Trousers">Trousers</option>
+            <option value="Skirts">Skirts</option>
+            <option value="Blouses">Blouses</option>
           </select>
           <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="Price" type="number" min="0" step="0.01" style={styles.input} />
           <input
@@ -615,69 +626,97 @@ export function AdminCatalogPage() {
 
       <section style={{ ...styles.cardBlock, marginTop: '24px' }}>
         <h3 style={styles.cardTitle}>Catalog Inventory ({productCount})</h3>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', margin: '12px 0 18px' }}>
+          <button type="button" style={{ ...styles.primaryAction, padding: '10px 12px' }} onClick={() => loadCatalog()}>Refresh</button>
+        </div>
+
         {loading ? (
           <div style={styles.emptyBox}>Loading catalog…</div>
         ) : products.length ? (
-          <div style={styles.tableWrap}>
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Category</th>
-                  <th>Variants</th>
-                  <th>Price</th>
-                  <th>Stock</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((product) => {
-                  const variantSummary = formatVariantInventory(product.variants ?? []);
+          <div style={{ display: 'grid', gap: '12px' }}>
+            {products.map((product) => {
+              const variantSummary = formatVariantInventory(product.variants ?? []);
+              const thumbnail = product.images && product.images.length ? product.images[0].image_url : undefined;
+              const price = Number(product.final_price || product.price || 0);
+              const oldPrice = Number(product.price || 0);
+              const discount = Math.round(Number(product.discount_percentage || 0));
 
-                  return (
-                    <tr key={product.id}>
-                      <td>{product.name}</td>
-                      <td>{product.category_name || 'Uncategorized'}</td>
-                      <td style={{ maxWidth: '280px', wordBreak: 'break-word' }}>
-                        {variantSummary.length ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {variantSummary.map((entry) => (
-                              <div key={`${product.id}-${entry.label}`} style={{ fontSize: '0.82rem', color: '#374151', background: '#eef2ff', borderRadius: '8px', padding: '4px 8px', display: 'inline-block', width: 'fit-content' }}>
-                                {entry.label}: <strong>{entry.stock}</strong>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          'No variants'
-                        )}
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <input
-                            value={priceInputs[product.id] ?? String(Number(product.price || product.final_price || 0))}
-                            onChange={(e) => setPriceInputs((prev) => ({ ...prev, [product.id]: e.target.value }))}
-                            type="number"
-                            min="0"
-                            style={{ ...styles.input, width: '110px' }}
-                          />
-                          <button type="button" style={styles.primaryAction} onClick={() => handlePriceUpdate(product.id)} disabled={updatingPriceId === product.id}>
-                            {updatingPriceId === product.id ? 'Saving…' : 'Update'}
-                          </button>
-                        </div>
-                      </td>
-                      <td>{product.stock_quantity}</td>
-                      <td><span style={{ ...styles.badge, background: product.is_active ? '#dcfce7' : '#f3f4f6', color: product.is_active ? '#166534' : '#374151' }}>{product.is_active ? 'Live' : 'Hidden'}</span></td>
-                      <td>
+              return (
+                <div key={product.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', background: '#fff', border: '1px solid #e5e7eb', padding: '12px', borderRadius: 12 }}>
+                  <div style={{ width: 90, height: 90, flexShrink: 0 }}>
+                    {thumbnail ? <img src={thumbnail} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} /> : <div style={{ width: '100%', height: '100%', background: '#f3f4f6', borderRadius: 8 }} />}
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
+                      <div>
+                        <strong style={{ fontSize: '1rem' }}>{product.name}</strong>
+                        <div style={styles.muted}>{product.brand || '—'}</div>
+                        <div style={{ marginTop: 6 }}><span style={styles.badge}>{product.segment || '—'}</span> <span style={{ marginLeft: 8, color: '#6b7280' }}>{product.category_name || '—'}</span></div>
+                      </div>
+
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '1.05rem', fontWeight: 800 }}>LKR {price.toLocaleString()}</div>
+                        {discount > 0 ? <div style={{ color: '#ef4444' }}>-{discount}% <span style={{ color: '#6b7280', fontSize: '0.9rem' }}>LKR {oldPrice.toLocaleString()}</span></div> : <div style={{ color: '#6b7280', fontSize: '0.9rem' }}>No discount</div>}
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: 10, display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      <div style={{ minWidth: 240 }}>
+                        <div style={styles.label}>Variants</div>
+                       {product.variants && product.variants.length ? (
+                         <div style={{ display: 'grid', gap: 8 }}>
+                           {(() => {
+                             const grouped: Record<string, any[]> = {};
+                             (product.variants || []).forEach((v: any) => {
+                               const size = String(v.size || 'N/A');
+                               grouped[size] = grouped[size] || [];
+                               grouped[size].push(v);
+                             });
+                             return Object.keys(grouped).map((sizeKey) => (
+                               <div key={`${product.id}-size-${sizeKey}`} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                 <div style={{ fontWeight: 700, minWidth: 60 }}>{sizeKey}</div>
+                                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                   {grouped[sizeKey].map((v: any) => (
+                                     <div key={`${product.id}-${sizeKey}-${v.color}`} style={{ background: '#eef2ff', padding: '6px 8px', borderRadius: 8 }}>
+                                       {v.color}: <strong>{v.stock_quantity ?? v.stock ?? 0}</strong>
+                                     </div>
+                                   ))}
+                                 </div>
+                               </div>
+                             ));
+                           })()}
+                         </div>
+                       ) : <div style={{ color: '#6b7280' }}>No variants</div>}
+                      </div>
+
+                      <div>
+                        <div style={styles.label}>Stock</div>
+                        <div><strong>{product.stock_quantity ?? 0}</strong></div>
+                      </div>
+
+                      <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <input
+                          value={priceInputs[product.id] ?? String(Number(product.final_price || product.price || 0))}
+                          onChange={(e) => setPriceInputs((prev) => ({ ...prev, [product.id]: e.target.value }))}
+                          type="number"
+                          min="0"
+                          style={{ ...styles.input, width: '110px' }}
+                        />
+                        <button type="button" style={{ ...styles.primaryAction, padding: '8px 12px' }} onClick={() => handlePriceUpdate(product.id)} disabled={updatingPriceId === product.id}>
+                          {updatingPriceId === product.id ? 'Saving…' : 'Update'}
+                        </button>
+
                         <button type="button" style={styles.deleteButton} onClick={() => handleDelete(product.id)}>
                           <Trash2 size={16} /> Delete
                         </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div style={styles.emptyBox}>No products found. Add your first product above.</div>
