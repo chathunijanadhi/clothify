@@ -284,8 +284,32 @@ export const updateProduct = async (id: string, payload: {
 };
 
 export const deleteProduct = async (id: string): Promise<boolean> => {
-  const res = await pool.query('DELETE FROM products WHERE id = $1', [id]);
-  return (res.rowCount ?? 0) > 0;
+  // Attempt a safe, transactional delete. If the product is referenced by historical orders (ON DELETE RESTRICT),
+  // fall back to marking the product as inactive so it no longer appears in the shop or catalog inventory.
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Remove product images and variants first — these are safe to remove.
+    await client.query('DELETE FROM product_images WHERE product_id = $1', [id]);
+    await client.query('DELETE FROM product_variants WHERE product_id = $1', [id]);
+
+    // Try to delete the product row. This will fail (0 rows affected) if ON DELETE RESTRICT prevented it
+    const delRes = await client.query('DELETE FROM products WHERE id = $1', [id]);
+    if ((delRes.rowCount ?? 0) > 0) {
+      await client.query('COMMIT');
+      return true;
+    }
+
+    // If we reach here, the product could not be deleted (likely referenced by orders). Mark inactive instead.
+    const updateRes = await client.query('UPDATE products SET is_active = false, updated_at = NOW() WHERE id = $1', [id]);
+    await client.query('COMMIT');
+    return (updateRes.rowCount ?? 0) > 0;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 };
 
 async function insertProductImages(productId: string, imageUrls: string[]): Promise<void> {
