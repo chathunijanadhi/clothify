@@ -25,7 +25,7 @@ export function Products() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [backendProducts, setBackendProducts] = useState<BackendProduct[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [_categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     let mounted = true;
