@@ -1,4 +1,4 @@
-import { ArrowRight, Truck, RotateCcw, ShieldCheck, Headphones, Star, Flame, Sparkles, Tag } from 'lucide-react';
+import { ArrowRight, Truck, RotateCcw, ShieldCheck, Star, Flame, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const trendingTags = [

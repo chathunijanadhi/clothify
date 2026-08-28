@@ -495,6 +495,10 @@ export function AdminCatalogPage() {
         return acc;
       }, {} as Record<string, string>);
       setPriceInputs((prev) => ({ ...prev, ...nextPriceMap }));
+    } catch (err) {
+      console.error('Unable to load catalog', err);
+      setProducts([]);
+      setCategories([]);
     } finally {
       setLoading(false);
     }
@@ -536,17 +540,36 @@ export function AdminCatalogPage() {
     if (!variants.length) { alert('Add at least one size and color combination with stock.'); return; }
     setSubmitting(true);
     try {
-      await productService.createProduct({
-        name: form.name, brand: form.brand || 'Clothify', segment: form.segment, categoryName: form.categoryName,
-        description: form.description || 'Admin created product', price: numericPrice,
-        discountPercentage: Number(form.discountPercentage ?? 0), images: imageUrls, variants,
+      const response = await productService.createProduct({
+        name: form.name,
+        brand: form.brand || 'Clothify',
+        segment: form.segment,
+        categoryName: form.categoryName,
+        description: form.description || 'Admin created product',
+        price: numericPrice,
+        discountPercentage: Number(form.discountPercentage ?? 0),
+        images: imageUrls,
+        variants,
       });
+
+      if (response && response.success === false) {
+        throw new Error(response.message || 'Unable to add product.');
+      }
+
       setForm({ name: '', brand: '', segment: 'Men', categoryName: 'T-Shirts', price: '', discountPercentage: '0', description: '' });
       setImageUrls([]);
       setVariantRows([{ size: '', colors: [{ color: '', stock: '0' }] }]);
-      await loadCatalog();
+
+      try {
+        await loadCatalog();
+      } catch {
+        // Keep the success message if the catalog refresh fails after a successful create.
+      }
+
+      alert('Product created successfully.');
     } catch (error: any) {
-      alert(error?.response?.data?.message || 'Unable to add product. Please check the details and try again.');
+      const message = error?.response?.data?.message || error?.message || 'Unable to add product. Please check the details and try again.';
+      alert(message);
     } finally {
       setSubmitting(false);
     }

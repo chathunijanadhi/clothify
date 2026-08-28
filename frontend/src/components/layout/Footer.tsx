@@ -9,7 +9,7 @@ export function Footer() {
         <div>
           <div className="footer-brand-badge">
             <img
-              src="https://res.cloudinary.com/efjuzuge/image/upload/v1787748753/clothify_3.png"
+              src="https://res.cloudinary.com/efjuzuge/image/upload/v1787922904/icon_only.png"
               alt="Clothify"
             />
           </div>
