@@ -468,7 +468,7 @@ export function AdminCatalogPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [_categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ name: '', brand: '', segment: 'All', categoryName: 'All', price: '', discountPercentage: '0', description: '' });
+  const [form, setForm] = useState({ name: '', brand: '', segment: 'Men', categoryName: 'T-Shirts', price: '', discountPercentage: '0', description: '' });
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [variantRows, setVariantRows] = useState<Array<{ size: string; colors: Array<{ color: string; stock: string }> }>>([
@@ -481,9 +481,10 @@ export function AdminCatalogPage() {
   const loadCatalog = async () => {
     try {
       const params: Record<string, unknown> = { limit: 200 };
-      if (form.segment && form.segment !== 'All') params.segment = form.segment;
-      if (form.categoryName && form.categoryName !== 'All') params.category = form.categoryName;
-
+      // The catalog inventory should always show the full product set.
+      // Reusing the create-product form values as server-side filters causes
+      // newly-created items to disappear when the form resets to defaults like
+      // Men / T-Shirts.
       const [allProducts, allCategories] = await Promise.all([
         productService.getProducts(params),
         productService.getCategories(),

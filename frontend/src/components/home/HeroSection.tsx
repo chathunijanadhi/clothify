@@ -9,14 +9,6 @@ const trendingTags = [
   { label: 'Maxi Skirts', href: '/products?category=Skirts', hot: false },
 ];
 
-const brandLogos = [
-  { name: 'Zara', initial: 'Z' },
-  { name: 'H&M', initial: 'H' },
-  { name: 'Mango', initial: 'M' },
-  { name: 'Levi\'s', initial: 'L' },
-  { name: 'Calvin', initial: 'C' },
-];
-
 export function HeroSection() {
   return (
     <section className="hero-section">
