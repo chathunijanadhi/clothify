@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import api from './api';
+import { setAuthToken } from './api';
 import * as authService from './auth.service';
+import { firebaseAuthService } from '../config/firebase';
 
 export interface User {
   id: string;
@@ -17,6 +18,11 @@ interface AuthContextShape {
   login: (email: string, password: string) => Promise<void>;
   register: (payload: { fullName?: string; email: string; phone?: string; password: string; confirmPassword?: string }) => Promise<void>;
   logout: () => void;
+  firebaseLogin: (email: string, password: string) => Promise<void>;
+  firebaseRegister: (email: string, password: string) => Promise<void>;
+  firebaseLoginWithGoogle: () => Promise<void>;
+  firebaseLogout: () => Promise<void>;
+  firebaseEnabled: boolean;
 }
 
 const AuthContext = createContext<AuthContextShape | undefined>(undefined);
@@ -30,17 +36,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function restore() {
       const token = localStorage.getItem('auth_token');
       if (!token) {
+        setAuthToken(null);
         if (mounted) setLoading(false);
         return;
       }
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setAuthToken(token);
       try {
         const u = await authService.me();
         if (!mounted) return;
         setUser(u as User);
       } catch {
         localStorage.removeItem('auth_token');
-        delete api.defaults.headers.common['Authorization'];
+        setAuthToken(null);
         setUser(null);
       } finally {
         if (mounted) setLoading(false);
@@ -58,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!result) throw new Error('Login failed');
     const { token, user: u } = result as { token: string; user: User };
     localStorage.setItem('auth_token', token);
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    setAuthToken(token);
     setUser(u as User);
   };
 
@@ -67,17 +74,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!result) throw new Error('Register failed');
     const { token, user: u } = result as { token: string; user: User };
     localStorage.setItem('auth_token', token);
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    setAuthToken(token);
     setUser(u as User);
   };
 
   const logout = () => {
     localStorage.removeItem('auth_token');
-    delete api.defaults.headers.common['Authorization'];
+        setAuthToken(null);
+        setUser(null);
+  };
+
+  const firebaseLogin = async (email: string, password: string) => {
+    const firebaseUser = await firebaseAuthService.signInWithEmail(email, password);
+    localStorage.removeItem('auth_token');
+    setAuthToken(null);
+    setUser({
+      id: firebaseUser.uid,
+      email: firebaseUser.email ?? email,
+      fullName: firebaseUser.displayName ?? null,
+      role: 'customer',
+      isActive: true,
+    });
+  };
+
+  const firebaseRegister = async (email: string, password: string) => {
+    const firebaseUser = await firebaseAuthService.signUpWithEmail(email, password);
+    localStorage.removeItem('auth_token');
+    setAuthToken(null);
+    setUser({
+      id: firebaseUser.uid,
+      email: firebaseUser.email ?? email,
+      fullName: firebaseUser.displayName ?? null,
+      role: 'customer',
+      isActive: true,
+    });
+  };
+
+  const firebaseLoginWithGoogle = async () => {
+    const firebaseUser = await firebaseAuthService.signInWithGoogle();
+    localStorage.removeItem('auth_token');
+    setAuthToken(null);
+    setUser({
+      id: firebaseUser.uid,
+      email: firebaseUser.email ?? 'google-user@example.com',
+      fullName: firebaseUser.displayName ?? null,
+      role: 'customer',
+      isActive: true,
+    });
+  };
+
+  const firebaseLogout = async () => {
+    await firebaseAuthService.signOut();
+    localStorage.removeItem('auth_token');
+    setAuthToken(null);
     setUser(null);
   };
 
-  const value = useMemo(() => ({ user, loading, login, register, logout }), [user, loading]);
+  const value = useMemo(() => ({ user, loading, login, register, logout, firebaseLogin, firebaseRegister, firebaseLoginWithGoogle, firebaseLogout, firebaseEnabled: firebaseAuthService.isEnabled }), [user, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

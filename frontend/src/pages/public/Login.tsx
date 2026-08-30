@@ -8,7 +8,7 @@ export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const { login, user } = useAuth();
+  const { login, user, firebaseEnabled, firebaseLoginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,6 +28,16 @@ export function Login() {
     }
   }
 
+  async function handleGoogleLogin() {
+    setError(null);
+    try {
+      await firebaseLoginWithGoogle();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Google login failed';
+      setError(message);
+    }
+  }
+
   return (
     <div className="auth-shell">
       <div className="auth-card">
@@ -41,6 +51,11 @@ export function Login() {
           <Input label="Password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
           {error ? <div className="form-error">{error}</div> : null}
           <Button type="submit">Login</Button>
+          {firebaseEnabled ? (
+            <Button type="button" variant="secondary" onClick={handleGoogleLogin}>
+              Continue with Google
+            </Button>
+          ) : null}
           <Button type="button" variant="secondary" onClick={() => navigate('/')}>Continue as guest</Button>
         </form>
 

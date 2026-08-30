@@ -18,8 +18,10 @@ const app = express();
 const allowedOrigins = new Set([
   'http://localhost:5173',
   'http://127.0.0.1:5173',
-  process.env.FRONTEND_URL,
-].filter(Boolean) as string[]);
+  'https://clothify-one.vercel.app',
+  'https://www.clothify-one.vercel.app',
+  ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map((origin) => origin.trim()).filter(Boolean) : []),
+]);
 
 // Middleware
 app.use(helmet());

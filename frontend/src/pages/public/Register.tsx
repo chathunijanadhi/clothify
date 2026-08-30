@@ -11,7 +11,7 @@ export function Register() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const { register, user } = useAuth();
+  const { register, user, firebaseEnabled, firebaseLoginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,6 +40,16 @@ export function Register() {
     }
   }
 
+  async function handleGoogleLogin() {
+    setError(null);
+    try {
+      await firebaseLoginWithGoogle();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Google registration failed';
+      setError(message);
+    }
+  }
+
   return (
     <div className="auth-shell">
       <div className="auth-card">
@@ -56,6 +66,11 @@ export function Register() {
           <Input label="Confirm Password" type="password" placeholder="Re-enter password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
           {error ? <div className="form-error">{error}</div> : null}
           <Button type="submit">Register</Button>
+          {firebaseEnabled ? (
+            <Button type="button" variant="secondary" onClick={handleGoogleLogin}>
+              Continue with Google
+            </Button>
+          ) : null}
         </form>
 
         <div className="auth-links">
