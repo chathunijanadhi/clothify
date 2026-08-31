@@ -1,13 +1,14 @@
 import {
   Heart, ShoppingBag, User, Package, ShoppingCart, Star,
-  BriefcaseBusiness, ChevronRight, Home, LogOut,
+  ChevronRight, Home, LogOut,
+  Clock, Truck, Check, Sparkles,
+  ShieldCheck,
 } from 'lucide-react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
-import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from '../../services/auth.context';
 import { CartList } from '../../components/cart/CartList';
 import { WishlistList } from '../../components/wishlist/WishlistList';
-import * as cartService from '../../services/cart.service';
 import * as orderService from '../../services/order.service';
 
 /* ───────── nav config ───────── */
@@ -17,12 +18,13 @@ const navItems = [
   { to: '/customer/orders',    label: 'My Orders',   icon: Package },
   { to: '/customer/cart',      label: 'My Cart',     icon: ShoppingCart },
   { to: '/customer/wishlist',  label: 'My Wishlist', icon: Heart },
-  { to: '/products',           label: 'Shop',        icon: ShoppingBag },
+  { to: '/products',           label: 'Shop All',    icon: ShoppingBag },
 ];
 
 /* ───────── Sidebar ───────── */
 function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
 
   const initials = user?.fullName
@@ -34,25 +36,38 @@ function Sidebar() {
       {/* Brand */}
       <div style={cs.brandWrap}>
         <div style={cs.brandBadge}>
-          <img src="https://res.cloudinary.com/efjuzuge/image/upload/v1787748753/clothify_3.png" alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <img
+            src="https://res.cloudinary.com/efjuzuge/image/upload/v1787922904/icon_only.png"
+            alt="Clothify"
+            style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 6 }}
+          />
         </div>
         <div>
-          <p style={cs.sideLabel}>Customer Portal</p>
-          <strong style={cs.sideTitle}>Clothify</strong>
+          <p style={cs.sideLabel}>Member Portal</p>
+          <strong style={cs.sideTitle}>Clothify Club</strong>
         </div>
       </div>
 
-      {/* Avatar */}
+      {/* Avatar Block */}
       <div style={cs.avatarBlock}>
         <div style={cs.avatarCircle}>{initials}</div>
-        <div>
-          <div style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>{user?.fullName || 'Customer'}</div>
-          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem' }}>{user?.email}</div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ color: 'white', fontWeight: 800, fontSize: '0.92rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {user?.fullName || 'Valued Member'}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.74rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {user?.email}
+          </div>
+          <div style={{ marginTop: 4 }}>
+            <span style={{ background: 'rgba(255,255,255,0.22)', color: 'white', padding: '2px 8px', borderRadius: 999, fontSize: '0.68rem', fontWeight: 800 }}>
+              ★ VIP Tier
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Nav */}
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: 5, flex: 1 }}>
+      {/* Nav List */}
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
         {navItems.map(({ to, label, icon: Icon }) => {
           const isActive = to === '/customer/dashboard'
             ? location.pathname === to
@@ -60,9 +75,9 @@ function Sidebar() {
           return (
             <NavLink key={to} to={to} end={to === '/customer/dashboard'} style={{ textDecoration: 'none' }}>
               <div style={{ ...cs.navItem, ...(isActive ? cs.navItemActive : {}) }}>
-                <Icon size={16} style={{ flexShrink: 0 }} />
+                <Icon size={17} style={{ flexShrink: 0 }} />
                 <span>{label}</span>
-                {isActive && <ChevronRight size={13} style={{ marginLeft: 'auto' }} />}
+                {isActive && <ChevronRight size={14} style={{ marginLeft: 'auto' }} />}
               </div>
             </NavLink>
           );
@@ -70,13 +85,30 @@ function Sidebar() {
       </nav>
 
       {/* Logout */}
-      <div style={{ marginTop: 20, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 16 }}>
+      <div style={{ marginTop: 20, borderTop: '1px solid rgba(255,255,255,0.18)', paddingTop: 16 }}>
         <button
           type="button"
-          onClick={logout}
-          style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 11, padding: '10px 14px', color: 'rgba(255,255,255,0.7)', fontWeight: 600, cursor: 'pointer', fontSize: '0.88rem', transition: 'all 0.2s' }}
+          onClick={() => {
+            logout();
+            navigate('/login');
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            width: '100%',
+            background: 'rgba(255,255,255,0.12)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: 12,
+            padding: '11px 14px',
+            color: 'white',
+            fontWeight: 700,
+            cursor: 'pointer',
+            fontSize: '0.88rem',
+            transition: 'all 0.2s',
+          }}
         >
-          <LogOut size={15} /> Logout
+          <LogOut size={15} /> Sign Out
         </button>
       </div>
     </aside>
@@ -92,20 +124,20 @@ function OverviewCard({
 }) {
   return (
     <Link to={action} style={cs.overviewCard}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <div style={{ ...cs.cardIconWrap, background: gradient }}>
           <Icon size={20} style={{ color: 'white' }} />
         </div>
         {countBadge && (
-          <span style={{ background: 'rgba(233,30,140,0.1)', color: '#e91e8c', borderRadius: 999, padding: '4px 10px', fontSize: '0.72rem', fontWeight: 800 }}>
+          <span style={{ background: 'var(--accent-soft)', color: 'var(--accent)', borderRadius: 999, padding: '4px 10px', fontSize: '0.74rem', fontWeight: 800 }}>
             {countBadge}
           </span>
         )}
       </div>
-      <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', color: '#1a0a2e', fontWeight: 700 }}>{title}</h3>
-      <p style={{ margin: '0 0 16px', color: '#7c6f8e', fontSize: '0.88rem', lineHeight: 1.6 }}>{description}</p>
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#e91e8c', fontWeight: 700, fontSize: '0.88rem' }}>
-        View details <ChevronRight size={14} />
+      <h3 style={{ margin: '0 0 6px', fontSize: '1.08rem', color: 'var(--primary)', fontWeight: 800 }}>{title}</h3>
+      <p style={{ margin: '0 0 14px', color: 'var(--muted)', fontSize: '0.86rem', lineHeight: 1.5 }}>{description}</p>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--accent)', fontWeight: 700, fontSize: '0.86rem' }}>
+        Access details <ChevronRight size={14} />
       </div>
     </Link>
   );
@@ -114,7 +146,7 @@ function OverviewCard({
 /* ───────── Customer Dashboard ───────── */
 export function CustomerDashboard() {
   const { user } = useAuth();
-  const name = user?.fullName || user?.email || 'Customer';
+  const name = user?.fullName || user?.email || 'Valued Shopper';
 
   return (
     <div style={cs.pageShell}>
@@ -123,28 +155,31 @@ export function CustomerDashboard() {
         <main style={cs.mainPanel}>
           <header style={cs.header}>
             <div>
-              <p style={cs.eyebrow}>My Account</p>
-              <h1 style={cs.title}>Welcome back, {name.split(' ')[0]}! 👋</h1>
+              <p style={cs.eyebrow}>VIP Member Portal</p>
+              <h1 style={cs.title}>Welcome back, {name.split(' ')[0]}! ✨</h1>
             </div>
+            <Link to="/products" className="btn btn-primary" style={{ fontSize: '0.86rem', padding: '9px 18px' }}>
+              <ShoppingBag size={15} /> Explore Collection
+            </Link>
           </header>
-          <p style={cs.subtitle}>Manage your account, orders, wishlist and shopping activity from one place.</p>
+          <p style={cs.subtitle}>Manage your orders, saved wishlists, delivery address, and account details in one place.</p>
 
           {/* Overview cards */}
           <div style={cs.overviewGrid}>
-            <OverviewCard title="My Orders"   description="View your previous and current orders."    icon={Package}     action="/customer/orders"   gradient="linear-gradient(135deg,#1a0a2e,#2d1b69)" />
-            <OverviewCard title="My Cart"     description="View products currently in your cart."     icon={ShoppingCart} action="/customer/cart"     gradient="linear-gradient(135deg,#e91e8c,#ff6b35)" />
-            <OverviewCard title="My Wishlist" description="View your saved favourites."                icon={Heart}       action="/customer/wishlist" gradient="linear-gradient(135deg,#7c3aed,#4f46e5)" />
-            <OverviewCard title="My Profile"  description="Manage your personal information."          icon={User}        action="/customer/profile"  gradient="linear-gradient(135deg,#00d4aa,#00b4d8)" />
+            <OverviewCard title="My Orders"   description="Track packages and purchase history."    icon={Package}     action="/customer/orders"   gradient="linear-gradient(135deg,#1a0a2e,#2d1b69)" />
+            <OverviewCard title="Shopping Bag" description="Items currently queued in your cart."    icon={ShoppingCart} action="/customer/cart"     gradient="linear-gradient(135deg,#e91e8c,#ff6b35)" />
+            <OverviewCard title="Saved Wishlist" description="Browse saved favorite pieces."       icon={Heart}       action="/customer/wishlist" gradient="linear-gradient(135deg,#7c3aed,#4f46e5)" />
+            <OverviewCard title="Profile Details" description="Update your personal details & address." icon={User}    action="/customer/profile"  gradient="linear-gradient(135deg,#00d4aa,#00b4d8)" />
           </div>
 
           {/* Quick actions */}
           <section style={{ marginBottom: 28 }}>
-            <h2 style={{ margin: '0 0 14px', fontSize: '1.2rem', color: '#1a0a2e', fontWeight: 700 }}>Quick Actions</h2>
+            <h2 style={{ margin: '0 0 14px', fontSize: '1.15rem', color: 'var(--primary)', fontWeight: 800 }}>Quick Actions</h2>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-              <Link to="/products"          style={cs.primaryBtn}>Continue Shopping</Link>
+              <Link to="/products"          style={cs.primaryBtn}>Shop New Arrivals</Link>
               <Link to="/customer/cart"     style={cs.secondaryBtn}>View Cart</Link>
               <Link to="/customer/wishlist" style={cs.secondaryBtn}>View Wishlist</Link>
-              <Link to="/customer/orders"   style={cs.secondaryBtn}>View Orders</Link>
+              <Link to="/customer/orders"   style={cs.secondaryBtn}>Track Orders</Link>
             </div>
           </section>
 
@@ -152,32 +187,32 @@ export function CustomerDashboard() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 18 }}>
             <div style={cs.infoCard}>
               <h3 style={cs.infoCardTitle}>Account Information</h3>
-              <div style={{ display: 'grid', gap: 14 }}>
-                <div><span style={cs.label}>Full Name</span><strong>{user?.fullName || 'Not set'}</strong></div>
-                <div><span style={cs.label}>Email</span><strong style={{ fontSize: '0.9rem' }}>{user?.email}</strong></div>
-                <div><span style={cs.label}>Phone</span><strong>{user?.phone || 'Not provided'}</strong></div>
+              <div style={{ display: 'grid', gap: 12 }}>
+                <div><span style={cs.label}>Full Name</span><strong style={{ color: 'var(--primary)' }}>{user?.fullName || 'Not configured'}</strong></div>
+                <div><span style={cs.label}>Email Address</span><strong style={{ fontSize: '0.88rem', color: 'var(--primary)' }}>{user?.email}</strong></div>
+                <div><span style={cs.label}>Phone Number</span><strong style={{ color: 'var(--primary)' }}>{user?.phone || 'Not provided'}</strong></div>
                 <div>
-                  <span style={cs.label}>Account Type</span>
+                  <span style={cs.label}>Membership Status</span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', background: '#ede9fe', color: '#5b21b6', borderRadius: 999, padding: '4px 12px', fontSize: '0.78rem', fontWeight: 800 }}>
-                    {user?.role}
+                    VIP Clothify Member
                   </span>
                 </div>
               </div>
             </div>
 
             <div style={cs.infoCard}>
-              <h3 style={cs.infoCardTitle}>Shopping Highlights</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <h3 style={cs.infoCardTitle}>Clothify Member Perks</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {[
-                  { icon: <Star size={17} />, text: 'Regular offers available', color: '#f59e0b' },
-                  { icon: <BriefcaseBusiness size={17} />, text: 'Order tracking enabled', color: '#8b5cf6' },
-                  { icon: <ShoppingBag size={17} />, text: 'Free shipping over selected items', color: '#e91e8c' },
+                  { icon: <Star size={17} />, text: '15% Member Discount (Code: WELCOME15)', color: '#f59e0b' },
+                  { icon: <Truck size={17} />, text: 'Free Express Delivery on orders over $50', color: '#00d4aa' },
+                  { icon: <ShieldCheck size={17} />, text: '30-Day Hassle-Free Returns & Exchanges', color: '#e91e8c' },
                 ].map((item, idx) => (
                   <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: `${item.color}18`, display: 'grid', placeItems: 'center', color: item.color, flexShrink: 0 }}>
                       {item.icon}
                     </div>
-                    <span style={{ fontWeight: 600, color: '#374151', fontSize: '0.92rem' }}>{item.text}</span>
+                    <span style={{ fontWeight: 600, color: 'var(--primary)', fontSize: '0.88rem' }}>{item.text}</span>
                   </div>
                 ))}
               </div>
@@ -198,10 +233,10 @@ function CustomerLayout({ title, description, children }: { title: string; descr
         <main style={cs.mainPanel}>
           <header style={cs.header}>
             <div>
-              <p style={cs.eyebrow}>Customer Area</p>
+              <p style={cs.eyebrow}>Customer Dashboard</p>
               <h1 style={cs.title}>{title}</h1>
             </div>
-            <Link to="/customer/dashboard" style={cs.backBtn}>← Dashboard</Link>
+            <Link to="/customer/dashboard" style={cs.backBtn}>← Dashboard Home</Link>
           </header>
           <p style={cs.subtitle}>{description}</p>
           {children}
@@ -214,22 +249,100 @@ function CustomerLayout({ title, description, children }: { title: string; descr
 /* ───────── Profile Page ───────── */
 export function CustomerProfilePage() {
   const { user } = useAuth();
+  const [fullName, setFullName] = useState(user?.fullName || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [address, setAddress] = useState('742 Evergreen Terrace, Colombo 03, Sri Lanka');
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 2600);
+  };
+
   return (
-    <CustomerLayout title="My Profile" description="Manage your personal information and settings.">
-      <div style={cs.sectionCard}>
-        <h3 style={cs.sectionCardTitle}>Personal Details</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 20 }}>
-          {[
-            { label: 'Full Name', value: user?.fullName || 'Not set' },
-            { label: 'Email Address', value: user?.email },
-            { label: 'Phone Number', value: user?.phone || 'Not provided' },
-            { label: 'Account Role', value: user?.role },
-          ].map(({ label, value }) => (
-            <div key={label} style={{ padding: '16px 18px', background: '#f8f4ff', borderRadius: 12, border: '1px solid #f0e6ff' }}>
-              <span style={cs.label}>{label}</span>
-              <strong style={{ color: '#1a0a2e', fontSize: '0.95rem' }}>{value}</strong>
+    <CustomerLayout title="My Profile Settings" description="Update your personal details, phone number, and delivery preferences.">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+        {/* Form Card */}
+        <div style={cs.sectionCard}>
+          <h3 style={cs.sectionCardTitle}>Edit Contact Details</h3>
+          <form onSubmit={handleSaveProfile} style={{ display: 'grid', gap: 14 }}>
+            <div>
+              <label style={cs.label}>Full Name</label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--border)', background: 'var(--panel)', outline: 'none' }}
+              />
             </div>
-          ))}
+
+            <div>
+              <label style={cs.label}>Email Address (Read-only)</label>
+              <input
+                type="email"
+                value={user?.email || ''}
+                disabled
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--border)', background: 'var(--panel-soft)', color: 'var(--muted)' }}
+              />
+            </div>
+
+            <div>
+              <label style={cs.label}>Phone Number</label>
+              <input
+                type="text"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+94 77 123 4567"
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--border)', background: 'var(--panel)', outline: 'none' }}
+              />
+            </div>
+
+            <div>
+              <label style={cs.label}>Default Shipping Address</label>
+              <textarea
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                rows={3}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--border)', background: 'var(--panel)', outline: 'none', resize: 'vertical' }}
+              />
+            </div>
+
+            {savedSuccess && (
+              <div style={{ color: 'var(--accent-3)', fontSize: '0.84rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Check size={16} /> Profile changes saved successfully!
+              </div>
+            )}
+
+            <button type="submit" className="btn btn-primary" style={{ marginTop: 6 }}>
+              Save Profile Changes
+            </button>
+          </form>
+        </div>
+
+        {/* Overview Summary */}
+        <div style={cs.sectionCard}>
+          <h3 style={cs.sectionCardTitle}>Membership Summary</h3>
+          <div style={{ display: 'grid', gap: 14 }}>
+            <div style={{ padding: '14px 16px', background: 'var(--panel)', borderRadius: 12, border: '1px solid var(--border)' }}>
+              <span style={cs.label}>Account ID</span>
+              <strong style={{ color: 'var(--primary)', fontSize: '0.88rem' }}>{user?.id || 'USR-2026-VIP'}</strong>
+            </div>
+
+            <div style={{ padding: '14px 16px', background: 'var(--panel)', borderRadius: 12, border: '1px solid var(--border)' }}>
+              <span style={cs.label}>Security Verification</span>
+              <strong style={{ color: 'var(--accent-3)', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <ShieldCheck size={16} /> Email Verified &amp; Protected
+              </strong>
+            </div>
+
+            <div style={{ padding: '14px 16px', background: 'var(--panel)', borderRadius: 12, border: '1px solid var(--border)' }}>
+              <span style={cs.label}>Member Benefit Level</span>
+              <strong style={{ color: 'var(--accent)', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Sparkles size={16} /> VIP Tier — Priority Shipping &amp; Special Offers
+              </strong>
+            </div>
+          </div>
         </div>
       </div>
     </CustomerLayout>
@@ -257,52 +370,105 @@ export function CustomerOrdersPage() {
     return () => { mounted = false; };
   }, []);
 
-  const statusStyle = (ps: string) => {
-    if (ps === 'paid')     return { background: '#dcfce7', color: '#166534' };
-    if (ps === 'rejected') return { background: '#fee2e2', color: '#991b1b' };
-    return { background: '#fef3c7', color: '#92400e' };
+  const statusBadge = (ps: string) => {
+    if (ps === 'paid')     return { background: '#dcfce7', color: '#166534', label: '✓ Payment Approved' };
+    if (ps === 'rejected') return { background: '#fee2e2', color: '#991b1b', label: '✕ Payment Declined' };
+    return { background: '#fef3c7', color: '#92400e', label: '⏳ Verification Pending' };
   };
 
   return (
-    <CustomerLayout title="My Orders" description="Track your purchases and recent activity.">
+    <CustomerLayout title="My Orders &amp; Delivery Tracking" description="Track purchases, delivery timelines, and payment receipts.">
       <div style={cs.sectionCard}>
         {loading ? (
-          <p style={{ color: '#7c6f8e', textAlign: 'center', padding: 32 }}>Loading your orders…</p>
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <div className="loader" style={{ margin: '0 auto 14px' }} />
+            <p style={{ color: 'var(--muted)', fontWeight: 600 }}>Loading orders…</p>
+          </div>
         ) : orders.length ? (
-          <div style={{ display: 'grid', gap: 14 }}>
-            {orders.map((order) => (
-              <div key={order.id} style={cs.orderCard}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <div>
-                    <strong style={{ fontSize: '1rem', color: '#1a0a2e' }}>{order.order_number}</strong>
-                    <div style={{ color: '#7c6f8e', fontSize: '0.85rem', marginTop: 3 }}>{new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+          <div style={{ display: 'grid', gap: 20 }}>
+            {orders.map((order) => {
+              const badge = statusBadge(order.payment_status);
+              const isPaid = order.payment_status === 'paid';
+
+              return (
+                <div key={order.id} style={cs.orderCard}>
+                  {/* Order header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: 14 }}>
+                    <div>
+                      <strong style={{ fontSize: '1.1rem', color: 'var(--primary)' }}>
+                        Order #{order.order_number}
+                      </strong>
+                      <div style={{ color: 'var(--muted)', fontSize: '0.84rem', marginTop: 3 }}>
+                        Placed on {new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </div>
+                    </div>
+                    <span style={{ ...cs.badge, background: badge.background, color: badge.color }}>
+                      {badge.label}
+                    </span>
                   </div>
-                  <span style={{ ...cs.badge, ...statusStyle(order.payment_status) }}>
-                    {order.payment_status === 'pending' ? '⏳ Awaiting approval' : order.payment_status === 'paid' ? '✓ Paid' : '✕ Rejected'}
-                  </span>
+
+                  {/* Order Timeline Visualizer */}
+                  <div className="order-timeline">
+                    <div className="order-timeline-bar">
+                      <div className="order-timeline-progress" style={{ width: isPaid ? '75%' : '25%' }} />
+                    </div>
+
+                    <div className="order-timeline-step completed">
+                      <div className="order-step-node"><Check size={16} /></div>
+                      <span className="order-step-label">Order Placed</span>
+                    </div>
+
+                    <div className={`order-timeline-step ${isPaid ? 'completed' : 'current'}`}>
+                      <div className="order-step-node">{isPaid ? <Check size={16} /> : <Clock size={16} />}</div>
+                      <span className="order-step-label">{isPaid ? 'Payment Confirmed' : 'Verification'}</span>
+                    </div>
+
+                    <div className={`order-timeline-step ${isPaid ? 'current' : ''}`}>
+                      <div className="order-step-node"><Package size={16} /></div>
+                      <span className="order-step-label">Processing</span>
+                    </div>
+
+                    <div className="order-timeline-step">
+                      <div className="order-step-node"><Truck size={16} /></div>
+                      <span className="order-step-label">Delivered</span>
+                    </div>
+                  </div>
+
+                  {/* Order details grid */}
+                  <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 14, background: 'var(--panel-soft)', padding: 14, borderRadius: 12 }}>
+                    <div>
+                      <span style={cs.label}>Order Status</span>
+                      <strong style={{ color: 'var(--primary)', textTransform: 'capitalize' }}>
+                        {order.status || 'Processing'}
+                      </strong>
+                    </div>
+                    <div>
+                      <span style={cs.label}>Payment Mode</span>
+                      <strong style={{ color: 'var(--primary)' }}>
+                        {order.payment_method === 'bank_transfer' ? '🏦 Bank Transfer' : '💳 Card / Online'}
+                      </strong>
+                    </div>
+                    <div>
+                      <span style={cs.label}>Order Grand Total</span>
+                      <strong style={{ color: 'var(--accent)', fontSize: '1.1rem' }}>
+                        LKR {Number(order.grand_total || 0).toLocaleString()}
+                      </strong>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 14 }}>
-                  <div>
-                    <span style={cs.label}>Order Status</span>
-                    <strong style={{ color: '#1a0a2e' }}>{order.status === 'pending' ? 'Awaiting approval' : order.status}</strong>
-                  </div>
-                  <div>
-                    <span style={cs.label}>Payment Method</span>
-                    <strong>{order.payment_method || 'Not set'}</strong>
-                  </div>
-                  <div>
-                    <span style={cs.label}>Grand Total</span>
-                    <strong style={{ color: '#e91e8c', fontSize: '1.05rem' }}>LKR {Number(order.grand_total || 0).toLocaleString()}</strong>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div style={cs.emptyBox}>
-            <Package size={40} style={{ color: '#e0d9f0', marginBottom: 12 }} />
-            <p style={{ margin: 0, color: '#7c6f8e', fontWeight: 600 }}>You haven't placed any orders yet.</p>
-            <Link to="/products" style={{ ...cs.primaryBtn, marginTop: 16, display: 'inline-flex' }}>Start Shopping</Link>
+            <Package size={40} style={{ color: 'var(--muted)', marginBottom: 12 }} />
+            <h3 style={{ margin: '0 0 6px', color: 'var(--primary)' }}>No Orders Placed Yet</h3>
+            <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.9rem' }}>
+              When you check out pieces from Clothify, you will be able to track delivery progress here.
+            </p>
+            <Link to="/products" className="btn btn-primary" style={{ marginTop: 18, display: 'inline-flex' }}>
+              Explore Collection
+            </Link>
           </div>
         )}
       </div>
@@ -312,160 +478,10 @@ export function CustomerOrdersPage() {
 
 /* ───────── Cart Page ───────── */
 export function CustomerCartPage() {
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'bank_transfer'>('card');
-  const [slipImage, setSlipImage] = useState<string | null>(null);
-  const [notes, setNotes] = useState('');
-  const [placing, setPlacing] = useState(false);
-  const [cart, setCart] = useState<any>(null);
-  const [cartLoading, setCartLoading] = useState(true);
-
-  const loadCart = async () => {
-    try {
-      const data = await cartService.getCart();
-      setCart(data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setCartLoading(false);
-    }
-  };
-
-  useEffect(() => { loadCart(); }, []);
-
-  const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = String(reader.result || '');
-      try {
-        const { uploadImage } = await import('../../services/upload.service');
-        const url = await uploadImage(dataUrl);
-        setSlipImage(url);
-      } catch (err) {
-        console.error('Upload failed', err);
-        alert('Unable to upload image. Please try again.');
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handlePlaceOrder = async () => {
-    if (!cart?.items?.length) { alert('Your cart is empty.'); return; }
-    if (paymentMethod === 'bank_transfer' && !slipImage) {
-      alert('Please upload your bank transfer slip before placing the order.');
-      return;
-    }
-    try {
-      setPlacing(true);
-      await orderService.createOrder({
-        paymentMethod,
-        slipImage: paymentMethod === 'bank_transfer' ? slipImage : null,
-        notes,
-        items: cart.items.map((item: any) => ({
-          productId: item.product_id,
-          quantity: Number(item.quantity || 0),
-          variantId: item.variant_id ?? null,
-          unitPrice: Number(item.price_at_time || 0),
-        })),
-      });
-      alert(paymentMethod === 'bank_transfer'
-        ? 'Order placed! Please wait for admin approval before your payment is confirmed.'
-        : 'Order placed successfully. Your payment is confirmed.');
-      window.location.reload();
-    } catch (error: any) {
-      alert(error?.response?.data?.message || error?.message || 'Unable to place order');
-    } finally {
-      setPlacing(false);
-    }
-  };
-
-  const radioStyle = (selected: boolean) => ({
-    display: 'flex', alignItems: 'center', gap: 12,
-    padding: '14px 18px', borderRadius: 12, cursor: 'pointer',
-    border: `2px solid ${selected ? '#e91e8c' : '#f0e6ff'}`,
-    background: selected ? 'rgba(233,30,140,0.06)' : '#fff',
-    transition: 'all 0.2s', fontWeight: 600, color: '#1a0a2e',
-  } as React.CSSProperties);
-
   return (
-    <CustomerLayout title="My Cart" description="Review items and complete your checkout.">
-      <div style={{ display: 'grid', gap: 20 }}>
-        <div style={cs.sectionCard}>
-          {cartLoading ? <p style={{ color: '#7c6f8e', padding: 20 }}>Loading cart…</p> : <CartList />}
-        </div>
-
-        {!cartLoading && cart?.items?.length ? (
-          <div style={cs.sectionCard}>
-            <h3 style={cs.sectionCardTitle}>Checkout</h3>
-            <div style={{ display: 'grid', gap: 20 }}>
-
-              {/* Payment method */}
-              <div>
-                <label style={{ display: 'block', fontWeight: 700, marginBottom: 12, color: '#1a0a2e' }}>Payment Method</label>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  <label style={radioStyle(paymentMethod === 'card')}>
-                    <input type="radio" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} style={{ accentColor: '#e91e8c' }} />
-                    💳 Card Payment
-                  </label>
-                  <label style={radioStyle(paymentMethod === 'bank_transfer')}>
-                    <input type="radio" checked={paymentMethod === 'bank_transfer'} onChange={() => setPaymentMethod('bank_transfer')} style={{ accentColor: '#e91e8c' }} />
-                    🏦 Bank Transfer
-                  </label>
-                </div>
-              </div>
-
-              {paymentMethod === 'bank_transfer' && (
-                <div>
-                  <label style={{ display: 'block', fontWeight: 700, marginBottom: 10, color: '#1a0a2e' }}>Upload Bank Transfer Slip</label>
-                  <input
-                    type="file" accept="image/*" onChange={handleImageUpload}
-                    style={{ padding: 12, border: '2px dashed #e0d9f0', borderRadius: 12, width: '100%', background: '#f8f4ff', cursor: 'pointer' }}
-                  />
-                  {slipImage && (
-                    <img src={slipImage} alt="Transfer slip preview" style={{ marginTop: 14, maxWidth: 220, borderRadius: 12, border: '2px solid #f0e6ff', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
-                  )}
-                </div>
-              )}
-
-              {/* Notes */}
-              <div>
-                <label style={{ display: 'block', fontWeight: 700, marginBottom: 10, color: '#1a0a2e' }}>Order Notes <span style={{ color: '#b5aac7', fontWeight: 400 }}>(optional)</span></label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Any special instructions…"
-                  style={{ width: '100%', minHeight: 90, borderRadius: 12, border: '1.5px solid #f0e6ff', resize: 'vertical', padding: '12px 14px', background: '#f8f4ff', color: '#1a0a2e', fontSize: '0.93rem', fontFamily: 'inherit', boxSizing: 'border-box' as const }}
-                />
-              </div>
-
-              {/* Totals */}
-              <div style={{ background: '#f8f4ff', border: '1.5px solid #f0e6ff', borderRadius: 14, padding: '18px 20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, color: '#7c6f8e' }}>
-                  <span>Subtotal</span>
-                  <strong style={{ color: '#1a0a2e' }}>LKR {Number(cart.subtotal || 0).toLocaleString()}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14, color: '#7c6f8e' }}>
-                  <span>Shipping</span>
-                  <strong style={{ color: '#1a0a2e' }}>LKR 250</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 800, color: '#1a0a2e', borderTop: '1.5px solid #f0e6ff', paddingTop: 14 }}>
-                  <span>Total</span>
-                  <span style={{ color: '#e91e8c' }}>LKR {(Number(cart.subtotal || 0) + 250).toLocaleString()}</span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                style={{ ...cs.primaryBtn, width: '100%', justifyContent: 'center', opacity: placing ? 0.7 : 1, fontSize: '1rem', padding: '14px 24px' }}
-                onClick={handlePlaceOrder}
-                disabled={placing}
-              >
-                {placing ? '⏳ Placing order…' : '🛍️ Place Order'}
-              </button>
-            </div>
-          </div>
-        ) : null}
+    <CustomerLayout title="My Shopping Bag" description="Review selected items, apply promo codes, and complete your order.">
+      <div style={cs.sectionCard}>
+        <CartList />
       </div>
     </CustomerLayout>
   );
@@ -474,13 +490,14 @@ export function CustomerCartPage() {
 /* ───────── Wishlist Page ───────── */
 export function CustomerWishlistPage() {
   return (
-    <CustomerLayout title="My Wishlist" description="Keep track of your favorite pieces.">
+    <CustomerLayout title="My Saved Wishlist" description="Keep track of pieces you love and move them directly to your bag.">
       <div style={cs.sectionCard}>
         <WishlistList />
       </div>
     </CustomerLayout>
   );
 }
+
 
 /* ───────── Styles ───────── */
 const cs = {

@@ -1,9 +1,10 @@
 import {
-  ArrowRight, Bell, PackageCheck, ShoppingBag, Trash2, Users,
-  CreditCard, LayoutDashboard, Package, ChevronRight,
+  ArrowRight, PackageCheck, ShoppingBag, Trash2, Users,
+  CreditCard, LayoutDashboard, Package, ChevronRight, Search,
+  Eye, ExternalLink, Plus, LogOut,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../services/auth.context';
 import * as adminService from '../../services/admin.service';
 import * as productService from '../../services/product.service';
@@ -20,8 +21,9 @@ const navItems = [
 
 /* ────────── shell ────────── */
 function AdminShell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   return (
     <div style={s.pageShell}>
@@ -31,11 +33,54 @@ function AdminShell({ title, subtitle, children }: { title: string; subtitle: st
         <aside style={s.sidebar}>
           <div style={s.brandWrap}>
             <div style={s.brandBadge}>
-              <img src="https://res.cloudinary.com/efjuzuge/image/upload/v1787748753/clothify_3.png" alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img
+                src="https://res.cloudinary.com/efjuzuge/image/upload/v1787922904/icon_only.png"
+                alt="Clothify"
+                style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 6 }}
+              />
             </div>
             <div>
-              <p style={s.sideLabel}>Admin Panel</p>
-              <strong style={s.sideTitle}>Clothify</strong>
+              <p style={s.sideLabel}>Management Suite</p>
+              <strong style={s.sideTitle}>Clothify Admin</strong>
+            </div>
+          </div>
+
+          {/* User quick card */}
+          <div
+            style={{
+              padding: '12px 14px',
+              borderRadius: 14,
+              background: 'rgba(255,255,255,0.06)',
+              marginBottom: 18,
+              border: '1px solid rgba(255,255,255,0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                background: 'var(--grad-accent)',
+                color: 'white',
+                fontWeight: 800,
+                fontSize: '0.8rem',
+                display: 'grid',
+                placeItems: 'center',
+                flexShrink: 0,
+              }}
+            >
+              {(user?.fullName || user?.email || 'A').slice(0, 2).toUpperCase()}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ color: 'white', fontWeight: 700, fontSize: '0.86rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user?.fullName || 'Administrator'}
+              </div>
+              <div style={{ color: 'var(--accent-3)', fontSize: '0.72rem', fontWeight: 700 }}>
+                ● Full Access
+              </div>
             </div>
           </div>
 
@@ -63,8 +108,26 @@ function AdminShell({ title, subtitle, children }: { title: string; subtitle: st
 
           <div style={s.sideFooter}>
             <Link to="/products" style={s.visitStoreBtn}>
-              <ShoppingBag size={15} /> Visit Store
+              <ShoppingBag size={15} /> Storefront View
             </Link>
+            <button
+              type="button"
+              onClick={() => {
+                logout();
+                navigate('/login');
+              }}
+              style={{
+                ...s.visitStoreBtn,
+                marginTop: 8,
+                background: 'rgba(239,68,68,0.12)',
+                borderColor: 'rgba(239,68,68,0.25)',
+                color: '#fca5a5',
+                cursor: 'pointer',
+                width: '100%',
+              }}
+            >
+              <LogOut size={15} /> Sign Out
+            </button>
           </div>
         </aside>
 
@@ -72,15 +135,14 @@ function AdminShell({ title, subtitle, children }: { title: string; subtitle: st
         <main style={s.mainPanel}>
           <header style={s.header}>
             <div>
-              <p style={s.eyebrow}>Administration</p>
+              <p style={s.eyebrow}>Storefront Operations</p>
               <h1 style={s.title}>{title}</h1>
               <p style={s.subtitle}>{subtitle}</p>
             </div>
             <div style={s.headerActions}>
-              <button type="button" style={s.iconBtn} aria-label="Notifications">
-                <Bell size={17} />
-              </button>
-              <button type="button" style={s.logoutBtn} onClick={logout}>Logout</button>
+              <Link to="/products" className="btn btn-outline" style={{ fontSize: '0.84rem', padding: '8px 14px' }}>
+                <ExternalLink size={14} /> Shop
+              </Link>
             </div>
           </header>
           {children}
@@ -115,7 +177,13 @@ function StatCard({
 /* ────────── Admin Dashboard ────────── */
 export function AdminDashboard() {
   const { user } = useAuth();
-  const [summary, setSummary] = useState<{ totalUsers?: number; totalCustomers?: number; totalProducts?: number; totalOrders?: number; recentCustomers?: Array<{ id: string; full_name: string; email: string; role: string; created_at: string }> } | null>(null);
+  const [summary, setSummary] = useState<{
+    totalUsers?: number;
+    totalCustomers?: number;
+    totalProducts?: number;
+    totalOrders?: number;
+    recentCustomers?: Array<{ id: string; full_name: string; email: string; role: string; created_at: string }>;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -137,30 +205,30 @@ export function AdminDashboard() {
 
       {/* Stats */}
       <div style={s.statsGrid}>
-        <StatCard title="Total Users"  value={String(summary?.totalUsers ?? 0)}     subtitle="All registered accounts"   icon={Users}        gradient="linear-gradient(135deg, #1a0a2e 0%, #2d1b69 100%)" />
-        <StatCard title="Customers"    value={String(summary?.totalCustomers ?? 0)}  subtitle="Active customer accounts"  icon={Users}        gradient="linear-gradient(135deg, #e91e8c 0%, #ff6b35 100%)" />
-        <StatCard title="Products"     value={String(summary?.totalProducts ?? 0)}   subtitle="Published catalog items"   icon={ShoppingBag}  gradient="linear-gradient(135deg, #00d4aa 0%, #00b4d8 100%)" />
-        <StatCard title="Orders"       value={String(summary?.totalOrders ?? 0)}     subtitle="Lifetime store orders"     icon={PackageCheck} gradient="linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)" />
+        <StatCard title="Total Accounts" value={String(summary?.totalUsers ?? 0)} subtitle="Registered user profiles" icon={Users} gradient="linear-gradient(135deg, #1a0a2e 0%, #2d1b69 100%)" />
+        <StatCard title="Customers" value={String(summary?.totalCustomers ?? 0)} subtitle="Active shoppers" icon={Users} gradient="linear-gradient(135deg, #e91e8c 0%, #ff6b35 100%)" />
+        <StatCard title="Catalog Styles" value={String(summary?.totalProducts ?? 0)} subtitle="Live store products" icon={ShoppingBag} gradient="linear-gradient(135deg, #00d4aa 0%, #00b4d8 100%)" />
+        <StatCard title="Orders Placed" value={String(summary?.totalOrders ?? 0)} subtitle="Processed store orders" icon={PackageCheck} gradient="linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)" />
       </div>
 
       {/* Lower grid */}
       <div style={s.lowerGrid}>
         <section style={s.card}>
-          <h3 style={s.cardTitle}>Quick Access</h3>
+          <h3 style={s.cardTitle}>Quick Navigation</h3>
           <div style={s.quickActions}>
-            <Link to="/products" style={s.primaryBtn}>View Store</Link>
-            <Link to="/admin/orders"    style={s.secondaryBtn}>Orders</Link>
-            <Link to="/admin/payments"  style={s.secondaryBtn}>Payments</Link>
-            <Link to="/admin/customers" style={s.secondaryBtn}>Customers</Link>
-            <Link to="/admin/catalog"   style={s.secondaryBtn}>Catalog</Link>
+            <Link to="/products" style={s.primaryBtn}><ShoppingBag size={15} /> Store View</Link>
+            <Link to="/admin/orders" style={s.secondaryBtn}><Package size={15} /> Orders</Link>
+            <Link to="/admin/payments" style={s.secondaryBtn}><CreditCard size={15} /> Payments</Link>
+            <Link to="/admin/customers" style={s.secondaryBtn}><Users size={15} /> Customers</Link>
+            <Link to="/admin/catalog" style={s.secondaryBtn}><Plus size={15} /> Manage Catalog</Link>
           </div>
         </section>
 
         <section style={s.card}>
           <h3 style={s.cardTitle}>Admin Profile</h3>
           <div style={s.profileGrid}>
-            <div style={s.profileItem}><span style={s.label}>Name</span><strong>{user?.fullName || 'Admin'}</strong></div>
-            <div style={s.profileItem}><span style={s.label}>Email</span><strong style={{ fontSize: '0.9rem' }}>{user?.email}</strong></div>
+            <div style={s.profileItem}><span style={s.label}>Full Name</span><strong>{user?.fullName || 'Administrator'}</strong></div>
+            <div style={s.profileItem}><span style={s.label}>Email Address</span><strong style={{ fontSize: '0.9rem' }}>{user?.email}</strong></div>
             <div style={s.profileItem}><span style={s.label}>Role</span>
               <span style={{ ...s.badge, background: '#ede9fe', color: '#5b21b6' }}>{user?.role}</span>
             </div>
@@ -170,17 +238,17 @@ export function AdminDashboard() {
 
       {/* Recent customers */}
       <section style={{ ...s.card, marginTop: 22 }}>
-        <h3 style={s.cardTitle}>Recent Customers</h3>
+        <h3 style={s.cardTitle}>Recent Customer Registrations</h3>
         {loading ? (
-          <div style={s.emptyBox}>Loading recent customers…</div>
-        ) : (summary?.recentCustomers?.length ? (
+          <div style={s.emptyBox}>Loading recent signups…</div>
+        ) : summary?.recentCustomers?.length ? (
           <div style={s.listWrap}>
             {summary.recentCustomers.map((c) => (
               <div key={c.id} style={s.listItem}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={s.avatarChip}>{(c.full_name || c.email).slice(0, 2).toUpperCase()}</div>
                   <div>
-                    <strong style={{ fontSize: '0.95rem' }}>{c.full_name || 'Unnamed'}</strong>
+                    <strong style={{ fontSize: '0.95rem', color: '#1a0a2e' }}>{c.full_name || 'Member'}</strong>
                     <div style={s.muted}>{c.email}</div>
                   </div>
                 </div>
@@ -193,7 +261,7 @@ export function AdminDashboard() {
           </div>
         ) : (
           <div style={s.emptyBox}>No recent customer signups yet.</div>
-        ))}
+        )}
       </section>
     </AdminShell>
   );
@@ -204,6 +272,9 @@ export function AdminOrdersPage() {
   const [orders, setOrders] = useState<Array<{ id: string; order_number: string; status: string; grand_total: string | number; payment_status: string; payment_method?: string; slipImage?: string | null; created_at: string; customer_name?: string; customer_email?: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'paid' | 'rejected'>('all');
+  const [searchFilter, setSearchFilter] = useState('');
+  const [selectedSlip, setSelectedSlip] = useState<string | null>(null);
 
   const load = async () => {
     try {
@@ -227,68 +298,200 @@ export function AdminOrdersPage() {
   };
 
   const paymentBadge = (ps: string) => {
-    if (ps === 'paid')     return { background: '#dcfce7', color: '#166534' };
-    if (ps === 'rejected') return { background: '#fee2e2', color: '#991b1b' };
-    return { background: '#fef3c7', color: '#92400e' };
+    if (ps === 'paid')     return { background: '#dcfce7', color: '#166534', label: 'Paid ✓' };
+    if (ps === 'rejected') return { background: '#fee2e2', color: '#991b1b', label: 'Rejected ✕' };
+    return { background: '#fef3c7', color: '#92400e', label: 'Pending Review' };
   };
 
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) => {
+      const matchesTab = activeTab === 'all' || o.payment_status === activeTab;
+      const matchesSearch = !searchFilter ||
+        o.order_number?.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        o.customer_name?.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        o.customer_email?.toLowerCase().includes(searchFilter.toLowerCase());
+      return matchesTab && matchesSearch;
+    });
+  }, [orders, activeTab, searchFilter]);
+
+
   return (
-    <AdminShell title="Orders" subtitle="Review recent purchases and payment status.">
+    <AdminShell title="Store Orders" subtitle="Review incoming purchases, customer receipts, and verify payment settlements.">
+      {/* Filters bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {(['all', 'pending', 'paid', 'rejected'] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              className={`tag ${activeTab === tab ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                textTransform: 'capitalize',
+                padding: '8px 16px',
+                fontWeight: 700,
+                fontSize: '0.84rem',
+              }}
+            >
+              {tab} ({tab === 'all' ? orders.length : orders.filter((o) => o.payment_status === tab).length})
+            </button>
+          ))}
+        </div>
+
+        <div className="auth-input-wrapper" style={{ width: 260 }}>
+          <span className="auth-input-icon"><Search size={15} /></span>
+          <input
+            type="text"
+            placeholder="Search order # or customer..."
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            className="auth-input-element"
+            style={{ minHeight: 38, paddingLeft: 36 }}
+          />
+        </div>
+      </div>
+
       {loading ? (
-        <div style={s.emptyBox}>Loading orders…</div>
-      ) : orders.length ? (
+        <div style={s.emptyBox}>Loading store orders…</div>
+      ) : filteredOrders.length ? (
         <div style={s.tableWrap}>
           <table className="cf-table">
             <thead>
               <tr>
                 <th>Order #</th>
                 <th>Customer</th>
-                <th>Status</th>
-                <th>Payment</th>
-                <th>Slip</th>
-                <th>Total</th>
-                <th>Date</th>
-                <th>Action</th>
+                <th>Payment Method</th>
+                <th>Payment Status</th>
+                <th>Bank Slip</th>
+                <th>Order Total</th>
+                <th>Placed Date</th>
+                <th>Verification Action</th>
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => (
-                <tr key={order.id}>
-                  <td><strong style={{ color: '#1a0a2e' }}>{order.order_number}</strong></td>
-                  <td>{order.customer_name || order.customer_email || 'Unknown'}</td>
-                  <td><span style={{ ...s.badge, background: '#ede9fe', color: '#5b21b6' }}>{order.status}</span></td>
-                  <td>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <span style={{ fontSize: '0.82rem', color: '#7c6f8e' }}>{order.payment_method || 'card'}</span>
-                      <span style={{ ...s.badge, ...paymentBadge(order.payment_status) }}>{order.payment_status}</span>
-                    </div>
-                  </td>
-                  <td>
-                    {order.slipImage
-                      ? <a href={order.slipImage} target="_blank" rel="noreferrer" style={{ color: '#e91e8c', fontWeight: 700, fontSize: '0.85rem' }}>View slip →</a>
-                      : <span style={s.muted}>—</span>}
-                  </td>
-                  <td><strong>LKR {Number(order.grand_total || 0).toLocaleString()}</strong></td>
-                  <td style={{ color: '#7c6f8e', fontSize: '0.88rem' }}>{new Date(order.created_at).toLocaleDateString()}</td>
-                  <td>
-                    {order.payment_status === 'pending' && order.slipImage ? (
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button type="button" style={s.confirmBtn} disabled={processing === order.id} onClick={() => handlePaymentDecision(order.id, 'paid')}>
-                          {processing === order.id ? '…' : 'Confirm'}
-                        </button>
-                        <button type="button" style={s.rejectBtn} disabled={processing === order.id} onClick={() => handlePaymentDecision(order.id, 'rejected')}>
-                          Reject
-                        </button>
+              {filteredOrders.map((order) => {
+                const badgeInfo = paymentBadge(order.payment_status);
+                return (
+                  <tr key={order.id}>
+                    <td>
+                      <strong style={{ color: 'var(--primary)', fontWeight: 800 }}>
+                        {order.order_number}
+                      </strong>
+                    </td>
+                    <td>
+                      <div>
+                        <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.92rem' }}>
+                          {order.customer_name || 'Valued Shopper'}
+                        </div>
+                        <div style={{ color: 'var(--muted)', fontSize: '0.78rem' }}>
+                          {order.customer_email}
+                        </div>
                       </div>
-                    ) : <span style={s.muted}>—</span>}
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td>
+                      <span style={{ textTransform: 'capitalize', fontSize: '0.85rem', fontWeight: 600 }}>
+                        {order.payment_method === 'bank_transfer' ? '🏦 Bank Transfer' : '💳 Card / Online'}
+                      </span>
+                    </td>
+                    <td>
+                      <span style={{ ...s.badge, background: badgeInfo.background, color: badgeInfo.color }}>
+                        {badgeInfo.label}
+                      </span>
+                    </td>
+                    <td>
+                      {order.slipImage ? (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSlip(order.slipImage || null)}
+                          style={{
+                            background: 'var(--accent-soft)',
+                            border: '1px solid var(--border)',
+                            borderRadius: 8,
+                            padding: '4px 10px',
+                            color: 'var(--accent)',
+                            fontWeight: 700,
+                            fontSize: '0.82rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <Eye size={13} /> View Slip
+                        </button>
+                      ) : (
+                        <span style={s.muted}>—</span>
+                      )}
+                    </td>
+                    <td>
+                      <strong style={{ color: 'var(--primary)', fontSize: '0.95rem' }}>
+                        LKR {Number(order.grand_total || 0).toLocaleString()}
+                      </strong>
+                    </td>
+                    <td style={{ color: 'var(--muted)', fontSize: '0.86rem' }}>
+                      {new Date(order.created_at).toLocaleDateString()}
+                    </td>
+                    <td>
+                      {order.payment_status === 'pending' ? (
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button
+                            type="button"
+                            style={s.confirmBtn}
+                            disabled={processing === order.id}
+                            onClick={() => handlePaymentDecision(order.id, 'paid')}
+                          >
+                            {processing === order.id ? '…' : '✓ Approve'}
+                          </button>
+                          <button
+                            type="button"
+                            style={s.rejectBtn}
+                            disabled={processing === order.id}
+                            onClick={() => handlePaymentDecision(order.id, 'rejected')}
+                          >
+                            ✕ Reject
+                          </button>
+                        </div>
+                      ) : (
+                        <span style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>Completed</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       ) : (
-        <div style={s.emptyBox}>No orders have been placed yet. Once customers check out, they will appear here.</div>
+        <div style={s.emptyBox}>No orders matching the selected filter criteria.</div>
+      )}
+
+      {/* Slip Preview Modal */}
+      {selectedSlip && (
+        <div className="cf-modal-backdrop" onClick={() => setSelectedSlip(null)}>
+          <div className="cf-modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 540 }}>
+            <div className="cf-modal-header">
+              <h3>Bank Transfer Receipt</h3>
+              <button type="button" className="cf-modal-close" onClick={() => setSelectedSlip(null)}>
+                ✕
+              </button>
+            </div>
+            <div className="cf-modal-body" style={{ textAlign: 'center' }}>
+              <img
+                src={selectedSlip}
+                alt="Bank Receipt Slip"
+                style={{ maxWidth: '100%', maxHeight: '65vh', borderRadius: 14, objectFit: 'contain', border: '1px solid var(--border)' }}
+              />
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ width: '100%', marginTop: 18 }}
+                onClick={() => setSelectedSlip(null)}
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </AdminShell>
   );
@@ -298,6 +501,7 @@ export function AdminOrdersPage() {
 export function AdminCustomersPage() {
   const [customers, setCustomers] = useState<Array<{ id: string; full_name: string | null; email: string; role: string; is_active: boolean; created_at: string }>>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -313,46 +517,76 @@ export function AdminCustomersPage() {
     return () => { mounted = false; };
   }, []);
 
+  const filtered = useMemo(() => {
+    return customers.filter((c) => {
+      return !search ||
+        c.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+        c.email?.toLowerCase().includes(search.toLowerCase()) ||
+        c.role?.toLowerCase().includes(search.toLowerCase());
+    });
+  }, [customers, search]);
+
   return (
-    <AdminShell title="Customers" subtitle="Manage registered customer accounts.">
+    <AdminShell title="Registered Customers" subtitle="Overview of all shoppers and registered client accounts.">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.95rem' }}>
+          Total Accounts: {customers.length}
+        </div>
+        <div className="auth-input-wrapper" style={{ width: 280 }}>
+          <span className="auth-input-icon"><Search size={15} /></span>
+          <input
+            type="text"
+            placeholder="Search by name, email or role..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="auth-input-element"
+            style={{ minHeight: 38, paddingLeft: 36 }}
+          />
+        </div>
+      </div>
+
       {loading ? (
-        <div style={s.emptyBox}>Loading customers…</div>
-      ) : customers.length ? (
+        <div style={s.emptyBox}>Loading customer roster…</div>
+      ) : filtered.length ? (
         <div style={s.tableWrap}>
           <table className="cf-table">
             <thead>
               <tr>
-                <th>Customer</th>
-                <th>Email</th>
-                <th>Role</th>
+                <th>Customer Name</th>
+                <th>Email Address</th>
+                <th>Account Role</th>
                 <th>Status</th>
-                <th>Joined</th>
+                <th>Member Since</th>
               </tr>
             </thead>
             <tbody>
-              {customers.map((c) => (
+              {filtered.map((c) => (
                 <tr key={c.id}>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={s.avatarChip}>{(c.full_name || c.email).slice(0, 2).toUpperCase()}</div>
-                      <strong>{c.full_name || 'Unnamed customer'}</strong>
+                      <strong style={{ color: 'var(--primary)' }}>{c.full_name || 'Clothify Member'}</strong>
                     </div>
                   </td>
-                  <td style={{ color: '#7c6f8e' }}>{c.email}</td>
-                  <td><span style={{ ...s.badge, background: '#ede9fe', color: '#5b21b6' }}>{c.role}</span></td>
+                  <td style={{ color: 'var(--muted)' }}>{c.email}</td>
+                  <td>
+                    <span style={{ ...s.badge, background: c.role === 'admin' ? '#ede9fe' : '#e0f2fe', color: c.role === 'admin' ? '#5b21b6' : '#0369a1' }}>
+                      {c.role.toUpperCase()}
+                    </span>
+                  </td>
                   <td>
                     <span style={{ ...s.badge, background: c.is_active ? '#dcfce7' : '#f3f4f6', color: c.is_active ? '#166534' : '#374151' }}>
                       {c.is_active ? '● Active' : '○ Inactive'}
                     </span>
                   </td>
-                  <td style={{ color: '#7c6f8e', fontSize: '0.88rem' }}>{new Date(c.created_at).toLocaleDateString()}</td>
+                  <td style={{ color: 'var(--muted)', fontSize: '0.88rem' }}>{new Date(c.created_at).toLocaleDateString()}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       ) : (
-        <div style={s.emptyBox}>There are no registered customers yet.</div>
+        <div style={s.emptyBox}>No customers match your search query.</div>
       )}
     </AdminShell>
   );
@@ -363,6 +597,7 @@ export function AdminPaymentsPage() {
   const [payments, setPayments] = useState<Array<{ id: string; order_id: string; order_number?: string; customer_name?: string; customer_email?: string; payment_method: string; amount: string | number; status: string; slipImage?: string | null; notes?: string | null; created_at: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [selectedSlip, setSelectedSlip] = useState<string | null>(null);
 
   const load = async () => {
     try {
@@ -386,78 +621,87 @@ export function AdminPaymentsPage() {
   };
 
   const statusStyle = (st: string) => {
-    if (st === 'paid')   return { background: '#dcfce7', color: '#166534' };
-    if (st === 'failed' || st === 'rejected') return { background: '#fee2e2', color: '#991b1b' };
-    return { background: '#fef3c7', color: '#92400e' };
+    if (st === 'paid')   return { background: '#dcfce7', color: '#166534', label: 'Paid & Settled' };
+    if (st === 'failed' || st === 'rejected') return { background: '#fee2e2', color: '#991b1b', label: 'Rejected' };
+    return { background: '#fef3c7', color: '#92400e', label: 'Under Review' };
   };
 
   return (
-    <AdminShell title="Payments" subtitle="Review uploaded bank transfer slips and approve or reject payments.">
+    <AdminShell title="Payment Settlements" subtitle="Verify and reconcile bank transfers, slip deposits, and transactions.">
       {loading ? (
-        <div style={s.emptyBox}>Loading payment records…</div>
+        <div style={s.emptyBox}>Loading payment logs…</div>
       ) : payments.length ? (
         <div style={{ display: 'grid', gap: 18 }}>
-          {payments.map((payment) => (
-            <div key={payment.id} style={s.paymentCard}>
-              {/* Header row */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ ...s.avatarChip, background: 'linear-gradient(135deg,#e91e8c,#ff6b35)' }}>
-                    {(payment.customer_name || payment.customer_email || 'U').slice(0, 2).toUpperCase()}
+          {payments.map((payment) => {
+            const badge = statusStyle(payment.status);
+            return (
+              <div key={payment.id} style={s.paymentCard}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ ...s.avatarChip, background: 'var(--grad-accent)' }}>
+                      {(payment.customer_name || payment.customer_email || 'U').slice(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <strong style={{ fontSize: '1.05rem', color: 'var(--primary)' }}>
+                        {payment.order_number || payment.order_id}
+                      </strong>
+                      <div style={s.muted}>{payment.customer_name || payment.customer_email || 'Shopper'}</div>
+                    </div>
                   </div>
-                  <div>
-                    <strong style={{ fontSize: '1rem', color: '#1a0a2e' }}>{payment.order_number || payment.order_id}</strong>
-                    <div style={s.muted}>{payment.customer_name || payment.customer_email || 'Unknown customer'}</div>
+                  <span style={{ ...s.badge, background: badge.background, color: badge.color, fontSize: '0.84rem', padding: '6px 14px' }}>
+                    {badge.label}
+                  </span>
+                </div>
+
+                <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 14, background: 'var(--panel-soft)', padding: 14, borderRadius: 12 }}>
+                  <div><span style={s.label}>Payment Method</span><strong>{payment.payment_method === 'bank_transfer' ? 'Bank Transfer' : 'Card Payment'}</strong></div>
+                  <div><span style={s.label}>Settlement Amount</span><strong style={{ color: 'var(--accent)', fontSize: '1.05rem' }}>LKR {Number(payment.amount || 0).toLocaleString()}</strong></div>
+                  <div><span style={s.label}>Date Recorded</span><span style={{ color: 'var(--muted)', fontWeight: 600 }}>{new Date(payment.created_at).toLocaleDateString()}</span></div>
+                </div>
+
+                {payment.slipImage && (
+                  <div style={{ marginTop: 16 }}>
+                    <span style={s.label}>Uploaded Deposit Slip</span>
+                    <img
+                      src={payment.slipImage}
+                      alt="Bank slip"
+                      style={{ marginTop: 8, maxWidth: 220, maxHeight: 160, borderRadius: 12, border: '1.5px solid var(--border)', cursor: 'pointer', objectFit: 'cover' }}
+                      onClick={() => setSelectedSlip(payment.slipImage || null)}
+                    />
                   </div>
-                </div>
-                <span style={{ ...s.badge, ...statusStyle(payment.status), fontSize: '0.82rem', padding: '7px 14px' }}>
-                  {payment.status.toUpperCase()}
-                </span>
+                )}
+
+                {(payment.status === 'pending' || payment.status === 'failed') && (
+                  <div style={{ marginTop: 18, display: 'flex', gap: 10 }}>
+                    <button type="button" style={s.confirmBtnLg} disabled={processing === payment.order_id} onClick={() => handleDecision(payment.order_id, 'paid')}>
+                      {processing === payment.order_id ? 'Processing…' : '✓ Accept Payment'}
+                    </button>
+                    <button type="button" style={s.rejectBtnLg} disabled={processing === payment.order_id} onClick={() => handleDecision(payment.order_id, 'rejected')}>
+                      ✕ Reject
+                    </button>
+                  </div>
+                )}
               </div>
-
-              {/* Details grid */}
-              <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 14 }}>
-                <div><span style={s.label}>Method</span><strong>{payment.payment_method}</strong></div>
-                <div><span style={s.label}>Amount</span><strong style={{ color: '#1a0a2e' }}>LKR {Number(payment.amount || 0).toLocaleString()}</strong></div>
-                <div><span style={s.label}>Date</span><span style={{ color: '#7c6f8e' }}>{new Date(payment.created_at).toLocaleDateString()}</span></div>
-              </div>
-
-              {payment.notes && (
-                <div style={{ marginTop: 14, padding: '12px 16px', background: '#f8f4ff', borderRadius: 10, fontSize: '0.9rem', color: '#7c6f8e' }}>
-                  💬 {payment.notes}
-                </div>
-              )}
-
-              {payment.slipImage ? (
-                <div style={{ marginTop: 14 }}>
-                  <span style={s.label}>Bank transfer slip</span>
-                  <img
-                    src={payment.slipImage}
-                    alt="Bank slip"
-                    style={{ marginTop: 10, maxWidth: 280, borderRadius: 14, border: '2px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                  />
-                </div>
-              ) : (
-                <div style={{ marginTop: 14, padding: '12px 16px', background: '#f9fafb', borderRadius: 10, color: '#b5aac7', fontSize: '0.9rem' }}>
-                  No slip image uploaded.
-                </div>
-              )}
-
-              {(payment.status === 'pending' || payment.status === 'failed') && (
-                <div style={{ marginTop: 18, display: 'flex', gap: 10 }}>
-                  <button type="button" style={s.confirmBtnLg} disabled={processing === payment.order_id} onClick={() => handleDecision(payment.order_id, 'paid')}>
-                    {processing === payment.order_id ? 'Processing…' : '✓ Accept Payment'}
-                  </button>
-                  <button type="button" style={s.rejectBtnLg} disabled={processing === payment.order_id} onClick={() => handleDecision(payment.order_id, 'rejected')}>
-                    ✕ Reject
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
-        <div style={s.emptyBox}>No payment submissions yet.</div>
+        <div style={s.emptyBox}>No payment submissions currently recorded.</div>
+      )}
+
+      {selectedSlip && (
+        <div className="cf-modal-backdrop" onClick={() => setSelectedSlip(null)}>
+          <div className="cf-modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="cf-modal-header">
+              <h3>Bank Slip Viewer</h3>
+              <button type="button" className="cf-modal-close" onClick={() => setSelectedSlip(null)}>✕</button>
+            </div>
+            <div className="cf-modal-body" style={{ textAlign: 'center' }}>
+              <img src={selectedSlip} alt="Receipt" style={{ maxWidth: '100%', maxHeight: '65vh', borderRadius: 12, objectFit: 'contain' }} />
+              <button type="button" className="btn btn-primary" style={{ width: '100%', marginTop: 16 }} onClick={() => setSelectedSlip(null)}>Close</button>
+            </div>
+          </div>
+        </div>
       )}
     </AdminShell>
   );
