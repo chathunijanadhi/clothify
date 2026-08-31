@@ -1,12 +1,12 @@
-import { ArrowRight, Truck, RotateCcw, ShieldCheck, Star, Flame, Sparkles } from 'lucide-react';
+import { ArrowRight, Truck, RotateCcw, ShieldCheck, Star, Flame, Sparkles, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const trendingTags = [
-  { label: 'Summer Dresses', href: '/products?category=Dresses', hot: true },
-  { label: 'Linen Shirts', href: '/products?category=Shirts', hot: false },
-  { label: 'Wide-leg Jeans', href: '/products?category=Jeans', hot: true },
-  { label: 'Blazers', href: '/products?segment=Women', hot: false },
-  { label: 'Maxi Skirts', href: '/products?category=Skirts', hot: false },
+  { label: 'Silk Dresses', href: '/products?category=Dresses', hot: true },
+  { label: 'Tailored Blazers', href: '/products?category=Shirts', hot: false },
+  { label: 'Organic Linen', href: '/products?category=T-Shirts', hot: true },
+  { label: 'Wide-Leg Denim', href: '/products?category=Jeans', hot: false },
+  { label: 'Resort Wear', href: '/products?category=Skirts', hot: true },
 ];
 
 export function HeroSection() {
@@ -18,50 +18,52 @@ export function HeroSection() {
         <div className="hero-copy animate-fade-up">
           <span className="eyebrow">
             <span className="eyebrow-dot" />
-            New Season Collection
+            ✨ Exclusive 2026 Capsule Collection
           </span>
+
           <h1>
-            Wear Your<br />
-            <span className="gradient-text">Style</span>
+            Elegance In Every<br />
+            <span className="gradient-text">Silhouette</span>
           </h1>
+
           <p>
-            Discover the latest trends and timeless essentials at Clothify.
-            Find the perfect pieces to express your style, your way.
+            Explore haute couture craftsmanship, sustainable organic linens, and contemporary silhouettes engineered for the modern wardrobe. Elevate your everyday style effortlessly.
           </p>
+
           <div className="hero-actions">
-            <Link to="/products" className="btn btn-primary">
-              Shop Now <ArrowRight size={18} />
+            <Link to="/products" className="btn btn-primary" style={{ padding: '16px 32px', fontSize: '1rem' }}>
+              Explore 2026 Collection <ArrowRight size={18} />
             </Link>
-            <Link to="/products" className="btn btn-secondary">
-              Explore Collection
+            <Link to="/products" className="btn btn-secondary" style={{ padding: '16px 26px', fontSize: '0.96rem' }}>
+              <ShoppingBag size={17} strokeWidth={2} /> Shop By Category
             </Link>
           </div>
 
           {/* Stats */}
           <div className="stats-row">
             <div>
-              <strong>25K+</strong>
-              <span>Happy customers</span>
+              <strong>35,000+</strong>
+              <span>Discerning Shoppers</span>
             </div>
             <div>
-              <strong>350+</strong>
-              <span>Styles available</span>
+              <strong>500+</strong>
+              <span>Exclusive Designs</span>
             </div>
             <div>
-              <strong>4.9/5</strong>
-              <span>Customer rating</span>
+              <strong>4.95 / 5★</strong>
+              <span>Over 5,200 Reviews</span>
             </div>
           </div>
 
           {/* ── Trending Now chips ── */}
           <div className="hero-trending">
             <div className="hero-trending-label">
-              <Flame size={13} /> Trending Now
+              <Flame size={14} /> Trending Styles
             </div>
             <div className="hero-trending-chips">
               {trendingTags.map((tag) => (
                 <Link key={tag.label} to={tag.href} className={`hero-tag ${tag.hot ? 'hero-tag--hot' : ''}`}>
-                  {tag.hot && <Sparkles size={11} />}
+                  {tag.hot && <Sparkles size={12} />}
                   {tag.label}
                 </Link>
               ))}
@@ -71,18 +73,18 @@ export function HeroSection() {
           {/* ── Trust row ── */}
           <div className="hero-trust-row">
             <div className="hero-trust-item">
-              <Truck size={14} />
-              <span>Free Delivery</span>
+              <Truck size={15} />
+              <span>Free Express Delivery</span>
             </div>
             <div className="hero-trust-divider" />
             <div className="hero-trust-item">
-              <RotateCcw size={14} />
-              <span>Easy Returns</span>
+              <RotateCcw size={15} />
+              <span>30-Day Easy Returns</span>
             </div>
             <div className="hero-trust-divider" />
             <div className="hero-trust-item">
-              <ShieldCheck size={14} />
-              <span>Secure Pay</span>
+              <ShieldCheck size={15} />
+              <span>100% Protected Payment</span>
             </div>
           </div>
         </div>
@@ -92,34 +94,35 @@ export function HeroSection() {
           <div className="hero-image-panel">
             <img
               src="https://res.cloudinary.com/efjuzuge/image/upload/v1787853264/freestocks-_3Q3tsJ01nc-unsplash_1.jpg"
-              alt="Fashion model"
+              alt="Luxury Fashion Model"
             />
           </div>
           <div className="hero-card card-one animate-fade-in delay-300">
-            <span>Today's pick</span>
-            <strong>New Arrivals</strong>
-            <span className="hero-card-badge">✨ Trending now</span>
+            <span>Editor's Selection</span>
+            <strong>New Season Drop</strong>
+            <span className="hero-card-badge">✨ Trending Now</span>
           </div>
           <div className="hero-card card-two animate-fade-in delay-200">
-            <span>Special offer</span>
-            <strong>Up to 40% off</strong>
+            <span>Special Member Offer</span>
+            <strong>Up to 35% Off</strong>
             <span className="hero-card-badge" style={{ background: 'var(--accent-3-soft)', color: 'var(--accent-3)' }}>
-              🏷️ Limited time
+              🏷️ Code: WELCOME15
             </span>
           </div>
 
           {/* Rating card */}
           <div className="hero-card card-three animate-fade-in delay-100">
-            <div style={{ display: 'flex', gap: 2, marginBottom: 4 }}>
-              {[1,2,3,4,5].map((i) => (
-                <Star key={i} size={11} fill="#f59e0b" color="#f59e0b" />
+            <div style={{ display: 'flex', gap: 3, marginBottom: 4 }}>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Star key={i} size={12} fill="#f59e0b" color="#f59e0b" />
               ))}
             </div>
-            <strong style={{ fontSize: '0.82rem' }}>4.9 / 5 rating</strong>
-            <span>From 2,400+ reviews</span>
+            <strong style={{ fontSize: '0.86rem', color: 'var(--primary)' }}>4.95 / 5.0 Rating</strong>
+            <span>Verified by 5,200+ Shoppers</span>
           </div>
         </div>
       </div>
     </section>
   );
 }
+
