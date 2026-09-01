@@ -370,10 +370,43 @@ export function CustomerOrdersPage() {
     return () => { mounted = false; };
   }, []);
 
-  const statusBadge = (ps: string) => {
-    if (ps === 'paid')     return { background: '#dcfce7', color: '#166534', label: '✓ Payment Approved' };
-    if (ps === 'rejected') return { background: '#fee2e2', color: '#991b1b', label: '✕ Payment Declined' };
+  const statusBadge = (ps: string, status?: string) => {
+    const normalizedPayment = String(ps || '').toLowerCase();
+    const normalizedStatus = String(status || '').toLowerCase();
+
+    if (normalizedPayment === 'paid' || normalizedStatus === 'confirmed' || normalizedStatus === 'processing' || normalizedStatus === 'shipped' || normalizedStatus === 'delivered') {
+      return { background: '#dcfce7', color: '#166534', label: '✓ Payment Approved' };
+    }
+    if (normalizedPayment === 'failed' || normalizedPayment === 'rejected' || normalizedStatus === 'cancelled') {
+      return { background: '#fee2e2', color: '#991b1b', label: '✕ Payment Declined' };
+    }
     return { background: '#fef3c7', color: '#92400e', label: '⏳ Verification Pending' };
+  };
+
+  const getOrderProgress = (order: any) => {
+    const status = String(order?.status || '').toLowerCase();
+    const paymentStatus = String(order?.payment_status || '').toLowerCase();
+
+    if (status === 'cancelled' || paymentStatus === 'failed' || paymentStatus === 'rejected') {
+      return { currentStep: -1, width: '0%', label: 'Order Cancelled' };
+    }
+    if (status === 'pending' || paymentStatus === 'pending') {
+      return { currentStep: 1, width: '25%', label: 'Verification Pending' };
+    }
+    if (status === 'confirmed' || paymentStatus === 'paid') {
+      return { currentStep: 2, width: '50%', label: 'Payment Confirmed' };
+    }
+    if (status === 'processing') {
+      return { currentStep: 3, width: '75%', label: 'Processing' };
+    }
+    if (status === 'shipped') {
+      return { currentStep: 4, width: '100%', label: 'Shipped' };
+    }
+    if (status === 'delivered') {
+      return { currentStep: 5, width: '100%', label: 'Delivered' };
+    }
+
+    return { currentStep: 1, width: '25%', label: 'Verification Pending' };
   };
 
   return (
@@ -387,8 +420,14 @@ export function CustomerOrdersPage() {
         ) : orders.length ? (
           <div style={{ display: 'grid', gap: 20 }}>
             {orders.map((order) => {
-              const badge = statusBadge(order.payment_status);
-              const isPaid = order.payment_status === 'paid';
+              const badge = statusBadge(order.payment_status, order.status);
+              const progress = getOrderProgress(order);
+              const timelineSteps = [
+                { key: 'placed', label: 'Order Placed', completed: true },
+                { key: 'verification', label: progress.currentStep >= 2 ? 'Payment Confirmed' : 'Verification', completed: progress.currentStep >= 2 },
+                { key: 'processing', label: 'Processing', completed: progress.currentStep >= 3 },
+                { key: 'delivery', label: progress.currentStep >= 4 ? 'Shipped' : 'Delivered', completed: progress.currentStep >= 4 },
+              ];
 
               return (
                 <div key={order.id} style={cs.orderCard}>
@@ -410,28 +449,22 @@ export function CustomerOrdersPage() {
                   {/* Order Timeline Visualizer */}
                   <div className="order-timeline">
                     <div className="order-timeline-bar">
-                      <div className="order-timeline-progress" style={{ width: isPaid ? '75%' : '25%' }} />
+                      <div className="order-timeline-progress" style={{ width: progress.width }} />
                     </div>
 
-                    <div className="order-timeline-step completed">
-                      <div className="order-step-node"><Check size={16} /></div>
-                      <span className="order-step-label">Order Placed</span>
-                    </div>
+                    {timelineSteps.map((step, index) => {
+                      const isCurrent = progress.currentStep === index + 1 || (index === 0 && progress.currentStep === 1);
+                      const isCompleted = step.completed || progress.currentStep > index + 1 || (index === 0 && progress.currentStep >= 1);
 
-                    <div className={`order-timeline-step ${isPaid ? 'completed' : 'current'}`}>
-                      <div className="order-step-node">{isPaid ? <Check size={16} /> : <Clock size={16} />}</div>
-                      <span className="order-step-label">{isPaid ? 'Payment Confirmed' : 'Verification'}</span>
-                    </div>
-
-                    <div className={`order-timeline-step ${isPaid ? 'current' : ''}`}>
-                      <div className="order-step-node"><Package size={16} /></div>
-                      <span className="order-step-label">Processing</span>
-                    </div>
-
-                    <div className="order-timeline-step">
-                      <div className="order-step-node"><Truck size={16} /></div>
-                      <span className="order-step-label">Delivered</span>
-                    </div>
+                      return (
+                        <div key={step.key} className={`order-timeline-step ${isCompleted ? 'completed' : isCurrent ? 'current' : ''}`}>
+                          <div className="order-step-node">
+                            {isCompleted ? <Check size={16} /> : index === 0 ? <Check size={16} /> : index === 1 ? <Clock size={16} /> : index === 2 ? <Package size={16} /> : <Truck size={16} />}
+                          </div>
+                          <span className="order-step-label">{step.label}</span>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Order details grid */}
@@ -439,7 +472,7 @@ export function CustomerOrdersPage() {
                     <div>
                       <span style={cs.label}>Order Status</span>
                       <strong style={{ color: 'var(--primary)', textTransform: 'capitalize' }}>
-                        {order.status || 'Processing'}
+                        {order.status || 'pending'}
                       </strong>
                     </div>
                     <div>

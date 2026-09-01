@@ -131,11 +131,12 @@ export const updatePaymentStatus = async (req: Request, res: Response) => {
     if (!orderId) {
       return res.status(400).json({ success: false, message: 'Order ID is required', error: 'INVALID_ORDER_ID' });
     }
-    if (!['paid', 'rejected'].includes(status)) {
+    const normalizedStatus = status === 'failed' ? 'rejected' : status;
+    if (!['paid', 'rejected'].includes(normalizedStatus)) {
       return res.status(400).json({ success: false, message: 'Status must be either paid or rejected', error: 'INVALID_PAYMENT_STATUS' });
     }
 
-    const updated = await orderModel.updateOrderPaymentStatus(orderId, (req as any).auth?.userId ?? '', status as 'paid' | 'rejected', note);
+    const updated = await orderModel.updateOrderPaymentStatus(orderId, (req as any).auth?.userId ?? '', normalizedStatus as 'paid' | 'rejected', note);
 
     if (!updated.order) {
       return res.status(404).json({ success: false, message: 'Order not found', error: 'ORDER_NOT_FOUND' });

@@ -272,7 +272,7 @@ export function AdminOrdersPage() {
   const [orders, setOrders] = useState<Array<{ id: string; order_number: string; status: string; grand_total: string | number; payment_status: string; payment_method?: string; slipImage?: string | null; created_at: string; customer_name?: string; customer_email?: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'paid' | 'rejected'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'paid' | 'failed' | 'rejected'>('all');
   const [searchFilter, setSearchFilter] = useState('');
   const [selectedSlip, setSelectedSlip] = useState<string | null>(null);
 
@@ -298,14 +298,17 @@ export function AdminOrdersPage() {
   };
 
   const paymentBadge = (ps: string) => {
-    if (ps === 'paid')     return { background: '#dcfce7', color: '#166534', label: 'Paid ✓' };
-    if (ps === 'rejected') return { background: '#fee2e2', color: '#991b1b', label: 'Rejected ✕' };
+    const normalized = String(ps || '').toLowerCase();
+    if (normalized === 'paid') return { background: '#dcfce7', color: '#166534', label: 'Paid ✓' };
+    if (normalized === 'failed' || normalized === 'rejected') return { background: '#fee2e2', color: '#991b1b', label: 'Rejected ✕' };
     return { background: '#fef3c7', color: '#92400e', label: 'Pending Review' };
   };
 
   const filteredOrders = useMemo(() => {
     return orders.filter((o) => {
-      const matchesTab = activeTab === 'all' || o.payment_status === activeTab;
+      const normalizedPaymentStatus = String(o.payment_status || '').toLowerCase();
+      const matchesTab = activeTab === 'all' ||
+        (activeTab === 'failed' ? normalizedPaymentStatus === 'failed' || normalizedPaymentStatus === 'rejected' : normalizedPaymentStatus === activeTab);
       const matchesSearch = !searchFilter ||
         o.order_number?.toLowerCase().includes(searchFilter.toLowerCase()) ||
         o.customer_name?.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -320,7 +323,7 @@ export function AdminOrdersPage() {
       {/* Filters bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
         <div style={{ display: 'flex', gap: 8 }}>
-          {(['all', 'pending', 'paid', 'rejected'] as const).map((tab) => (
+          {(['all', 'pending', 'paid', 'failed', 'rejected'] as const).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -333,7 +336,13 @@ export function AdminOrdersPage() {
                 fontSize: '0.84rem',
               }}
             >
-              {tab} ({tab === 'all' ? orders.length : orders.filter((o) => o.payment_status === tab).length})
+              {tab} ({tab === 'all'
+                ? orders.length
+                : orders.filter((o) => {
+                    const normalized = String(o.payment_status || '').toLowerCase();
+                    if (tab === 'failed') return normalized === 'failed' || normalized === 'rejected';
+                    return normalized === tab;
+                  }).length})
             </button>
           ))}
         </div>
@@ -621,8 +630,9 @@ export function AdminPaymentsPage() {
   };
 
   const statusStyle = (st: string) => {
-    if (st === 'paid')   return { background: '#dcfce7', color: '#166534', label: 'Paid & Settled' };
-    if (st === 'failed' || st === 'rejected') return { background: '#fee2e2', color: '#991b1b', label: 'Rejected' };
+    const normalized = String(st || '').toLowerCase();
+    if (normalized === 'paid') return { background: '#dcfce7', color: '#166534', label: 'Paid & Settled' };
+    if (normalized === 'failed' || normalized === 'rejected') return { background: '#fee2e2', color: '#991b1b', label: 'Rejected' };
     return { background: '#fef3c7', color: '#92400e', label: 'Under Review' };
   };
 

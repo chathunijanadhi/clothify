@@ -8,7 +8,8 @@ import pool from '../config/database';
     await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS segment TEXT");
   } catch (err) {
     // Log but don't fail startup — operations can proceed and errors will surface on queries.
-    console.error('Warning: failed to ensure products.segment column exists', err?.message || err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('Warning: failed to ensure products.segment column exists', message);
   }
 })();
 
@@ -216,6 +217,7 @@ export const updateProduct = async (id: string, payload: {
   images?: string[];
   variants?: Array<{ size?: string; color?: string; stockQuantity?: number; colors?: Array<{ color?: string; stockQuantity?: number; stock?: number }> }>;
   isActive?: boolean;
+  segment?: string | null;
 }): Promise<ProductRow | null> => {
   const existing = await getProductById(id);
   if (!existing) return null;

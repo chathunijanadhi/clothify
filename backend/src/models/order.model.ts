@@ -199,6 +199,12 @@ export const updateOrderPaymentStatus = async (orderId: string, adminUserId: str
   const paymentState = normalizedStatus === 'paid' ? 'paid' : 'failed';
   const orderState = normalizedStatus === 'paid' ? 'confirmed' : 'cancelled';
 
+  const validTransitions: Record<string, string[]> = {
+    pending: ['paid', 'rejected'],
+    confirmed: ['paid'],
+    cancelled: ['paid'],
+  };
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -211,6 +217,13 @@ export const updateOrderPaymentStatus = async (orderId: string, adminUserId: str
     if (!currentOrder.rows[0]) {
       await client.query('ROLLBACK');
       return { order: null, payment: null };
+    }
+
+    const currentStatus = String(currentOrder.rows[0].status ?? 'pending');
+    const allowedNextStatuses = validTransitions[currentStatus] ?? [];
+    if (allowedNextStatuses.length && !allowedNextStatuses.includes(normalizedStatus === 'paid' ? 'paid' : 'rejected')) {
+      await client.query('ROLLBACK');
+      throw new Error('INVALID_ORDER_STATUS_TRANSITION');
     }
 
     const paymentResult = await client.query(
