@@ -731,14 +731,12 @@ export function AdminCatalogPage() {
   const [submitting, setSubmitting] = useState(false);
   const [updatingPriceId, setUpdatingPriceId] = useState<string | null>(null);
   const [priceInputs, setPriceInputs] = useState<Record<string, string>>({});
+  const [inventorySegment, setInventorySegment] = useState<'All' | 'Men' | 'Women' | 'Kids'>('All');
+  const [inventorySearch, setInventorySearch] = useState('');
 
   const loadCatalog = async () => {
     try {
       const params: Record<string, unknown> = { limit: 200 };
-      // The catalog inventory should always show the full product set.
-      // Reusing the create-product form values as server-side filters causes
-      // newly-created items to disappear when the form resets to defaults like
-      // Men / T-Shirts.
       const [allProducts, allCategories] = await Promise.all([
         productService.getProducts(params),
         productService.getCategories(),
@@ -762,6 +760,19 @@ export function AdminCatalogPage() {
   useEffect(() => { loadCatalog(); }, []);
 
   const productCount = useMemo(() => products.length, [products]);
+
+  const filteredInventory = useMemo(() => {
+    return products.filter((p) => {
+      const seg = String((p as any).segment || '').toLowerCase();
+      const matchesSeg = inventorySegment === 'All' || seg === inventorySegment.toLowerCase();
+      const searchTerms = inventorySearch.toLowerCase().trim();
+      const matchesSearch = !searchTerms ||
+        p.name.toLowerCase().includes(searchTerms) ||
+        (p.brand && p.brand.toLowerCase().includes(searchTerms)) ||
+        (p.category_name && p.category_name.toLowerCase().includes(searchTerms));
+      return matchesSeg && matchesSearch;
+    });
+  }, [products, inventorySegment, inventorySearch]);
 
   const addVariantSize = () => setVariantRows((prev) => [...prev, { size: '', colors: [{ color: '', stock: '0' }] }]);
   const addVariantColor = (sizeIndex: number) =>
@@ -857,20 +868,55 @@ export function AdminCatalogPage() {
         <div style={s.formGrid}>
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Product name" style={s.input} />
           <input value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} placeholder="Brand" style={s.input} />
-          <select value={form.segment} onChange={(e) => setForm({ ...form, segment: e.target.value })} style={s.input}>
-            <option value="Men">Men</option>
-            <option value="Women">Women</option>
-            <option value="Kids">Kids</option>
+          <select
+            value={form.segment}
+            onChange={(e) => {
+              const seg = e.target.value;
+              const defaultCat = seg === 'Women' ? 'Dresses' : 'T-Shirts';
+              setForm({ ...form, segment: seg, categoryName: defaultCat });
+            }}
+            style={s.input}
+          >
+            <option value="Men">Men's Fashion</option>
+            <option value="Women">Women's Fashion</option>
+            <option value="Kids">Kids' Collection</option>
           </select>
           <select value={form.categoryName} onChange={(e) => setForm({ ...form, categoryName: e.target.value })} style={s.input}>
-            <option value="T-Shirts">T-Shirts</option>
-            <option value="Shirts">Shirts</option>
-            <option value="Dresses">Dresses</option>
-            <option value="Jackets">Jackets</option>
-            <option value="Jeans">Jeans</option>
-            <option value="Trousers">Trousers</option>
-            <option value="Skirts">Skirts</option>
-            <option value="Blouses">Blouses</option>
+            {form.segment === 'Men' && (
+              <>
+                <option value="T-Shirts">T-Shirts</option>
+                <option value="Shirts">Shirts</option>
+                <option value="Jackets">Jackets</option>
+                <option value="Jeans">Jeans</option>
+                <option value="Trousers">Trousers</option>
+                <option value="Shoes">Shoes</option>
+                <option value="Accessories">Accessories</option>
+              </>
+            )}
+            {form.segment === 'Women' && (
+              <>
+                <option value="Dresses">Dresses</option>
+                <option value="Skirts">Skirts</option>
+                <option value="Blouses">Blouses</option>
+                <option value="T-Shirts">T-Shirts</option>
+                <option value="Shirts">Shirts</option>
+                <option value="Jackets">Jackets</option>
+                <option value="Jeans">Jeans</option>
+                <option value="Trousers">Trousers</option>
+                <option value="Shoes">Shoes</option>
+                <option value="Accessories">Accessories</option>
+              </>
+            )}
+            {form.segment === 'Kids' && (
+              <>
+                <option value="T-Shirts">T-Shirts</option>
+                <option value="Shirts">Shirts</option>
+                <option value="Dresses">Dresses</option>
+                <option value="Jackets">Jackets</option>
+                <option value="Jeans">Jeans</option>
+                <option value="Trousers">Trousers</option>
+              </>
+            )}
           </select>
           <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="Price (LKR)" type="number" min="0" step="0.01" style={s.input} />
           <input value={form.discountPercentage} onChange={(e) => setForm({ ...form, discountPercentage: e.target.value })} placeholder="Discount %" type="number" min="0" max="100" step="0.01" style={s.input} />
@@ -960,16 +1006,44 @@ export function AdminCatalogPage() {
 
       {/* ── Product list ── */}
       <section style={{ ...s.card, marginTop: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
           <h3 style={s.cardTitle}>Catalog Inventory ({productCount})</h3>
-          <button type="button" style={s.secondaryBtn} onClick={loadCatalog}>↻ Refresh</button>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className="auth-input-wrapper" style={{ width: 220 }}>
+              <span className="auth-input-icon"><Search size={14} /></span>
+              <input
+                type="text"
+                placeholder="Search styles..."
+                value={inventorySearch}
+                onChange={(e) => setInventorySearch(e.target.value)}
+                className="auth-input-element"
+                style={{ minHeight: 36, paddingLeft: 34, fontSize: '0.84rem' }}
+              />
+            </div>
+            <button type="button" style={s.secondaryBtn} onClick={loadCatalog}>↻ Refresh</button>
+          </div>
+        </div>
+
+        {/* Inventory Segment Tabs */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
+          {(['All', 'Men', 'Women', 'Kids'] as const).map((seg) => (
+            <button
+              key={seg}
+              type="button"
+              className={`tag ${inventorySegment === seg ? 'active' : ''}`}
+              onClick={() => setInventorySegment(seg)}
+              style={{ padding: '6px 14px', fontSize: '0.82rem', fontWeight: 700 }}
+            >
+              {seg === 'All' ? '🌟 All Departments' : `${seg}'s`} ({seg === 'All' ? products.length : products.filter((p) => String((p as any).segment || '').toLowerCase() === seg.toLowerCase()).length})
+            </button>
+          ))}
         </div>
 
         {loading ? (
           <div style={s.emptyBox}>Loading catalog…</div>
-        ) : products.length ? (
+        ) : filteredInventory.length ? (
           <div style={{ display: 'grid', gap: 14 }}>
-            {products.map((product) => {
+            {filteredInventory.map((product) => {
               const thumbnail = product.images?.length ? product.images[0].image_url : undefined;
               const price     = Number(product.final_price || product.price || 0);
               const oldPrice  = Number(product.price || 0);
@@ -989,7 +1063,7 @@ export function AdminCatalogPage() {
                         <strong style={{ fontSize: '0.97rem', color: '#1a0a2e' }}>{product.name}</strong>
                         <div style={s.muted}>{product.brand || '—'}</div>
                         <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          <span style={{ ...s.badge, background: '#ede9fe', color: '#5b21b6' }}>{(product as any).segment || '—'}</span>
+                          <span style={{ ...s.badge, background: '#ede9fe', color: '#5b21b6', fontWeight: 800 }}>{(product as any).segment || 'Women'}</span>
                           <span style={{ ...s.badge, background: '#f0fdf4', color: '#166534' }}>{product.category_name || '—'}</span>
                         </div>
                       </div>
@@ -1041,7 +1115,7 @@ export function AdminCatalogPage() {
             })}
           </div>
         ) : (
-          <div style={s.emptyBox}>No products found. Add your first product above.</div>
+          <div style={s.emptyBox}>No products match the selected department or search filter.</div>
         )}
       </section>
     </AdminShell>

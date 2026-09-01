@@ -49,6 +49,7 @@ export interface Product {
   images?: ProductImage[];
   variants?: ProductVariant[];
   category_name?: string;
+  segment?: string | null;
 }
 
 // UI-friendly DTO derived from backend Product (camelCase & typed)
@@ -56,6 +57,7 @@ export interface UIProduct {
   id: string;
   name: string;
   category: string;
+  segment?: string | null;
   description?: string | null;
   brand?: string | null;
   price: number;
