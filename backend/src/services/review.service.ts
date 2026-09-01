@@ -18,7 +18,7 @@ export const getReviewsByProduct = async (productId: string): Promise<ReviewItem
   const query = `
     SELECT r.id, r.user_id, r.product_id, r.rating, r.review_text, r.is_verified,
            r.created_at, r.updated_at,
-           u.first_name, u.last_name, u.email
+           u.full_name, u.email
     FROM reviews r
     LEFT JOIN users u ON u.id = r.user_id
     WHERE r.product_id = $1
@@ -26,8 +26,8 @@ export const getReviewsByProduct = async (productId: string): Promise<ReviewItem
   `;
   const result = await pool.query(query, [productId]);
   return result.rows.map((row) => {
-    const fullName = `${row.first_name || ''} ${row.last_name || ''}`.trim() || 'Verified Shopper';
-    const initials = (row.first_name ? row.first_name[0] : '') + (row.last_name ? row.last_name[0] : '') || 'VS';
+    const fullName = String(row.full_name || '').trim() || 'Verified Shopper';
+    const initials = fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'VS';
     return {
       id: row.id,
       userId: row.user_id,
