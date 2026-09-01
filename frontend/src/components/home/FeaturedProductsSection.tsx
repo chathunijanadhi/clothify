@@ -14,7 +14,7 @@ export function FeaturedProductsSection() {
     let mounted = true;
     async function load() {
       try {
-        const raw = await productService.getProducts({ limit: 12 });
+        const raw = await productService.getProducts({ limit: 100 });
         if (mounted) {
           const transformed: UIProduct[] = raw.map((p: BackendProduct) => {
             const rawPrice = Number(p.price || 0);
@@ -28,6 +28,7 @@ export function FeaturedProductsSection() {
               id: p.id,
               name: p.name,
               category: p.category_name || 'Fashion',
+              segment: p.segment || null,
               description: p.description,
               brand: p.brand || 'Clothify Exclusive',
               price: finalPrice,
@@ -53,82 +54,149 @@ export function FeaturedProductsSection() {
     return () => { mounted = false; };
   }, []);
 
+  // Return a curated subset of exactly 4 items per filter tab
   const displayedProducts = useMemo(() => {
     if (activeTab === 'deals') {
       const deals = products.filter((p) => p.discount && p.discount > 0);
-      return deals.length ? deals.slice(0, 8) : products.slice(0, 8);
+      return deals.length ? deals.slice(0, 4) : products.slice(0, 4);
     }
     if (activeTab === 'new') {
-      return [...products].reverse().slice(0, 8);
+      return [...products].reverse().slice(0, 4);
     }
-    return products.slice(0, 8);
+    // Trending: top rated or first 4 featured
+    return [...products].sort((a, b) => b.rating - a.rating).slice(0, 4);
   }, [products, activeTab]);
 
   return (
-    <section className="section-block" style={{ background: 'var(--bg)' }}>
+    <section className="section-block" style={{ background: 'var(--bg)', padding: 'clamp(36px, 5vw, 64px) 0' }}>
       <div className="container">
         {/* Section Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16, marginBottom: 28 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-end',
+            flexWrap: 'wrap',
+            gap: 16,
+            marginBottom: 24,
+          }}
+        >
           <div>
             <span className="eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <Sparkles size={13} /> Handpicked For You
             </span>
-            <h2 style={{ fontSize: 'clamp(1.8rem,3vw,2.4rem)', color: 'var(--primary)', margin: '6px 0 0', fontWeight: 800 }}>
+            <h2 style={{ fontSize: 'clamp(1.6rem, 3.2vw, 2.3rem)', color: 'var(--primary)', margin: '6px 0 0', fontWeight: 800 }}>
               Curated <span className="gradient-text">Favorites</span>
             </h2>
           </div>
 
           {/* Filter tabs */}
-          <div style={{ display: 'flex', gap: 8, background: 'var(--panel)', padding: 5, borderRadius: 999, border: '1px solid var(--border)' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: 6,
+              background: 'var(--panel)',
+              padding: 4,
+              borderRadius: 999,
+              border: '1.5px solid var(--border)',
+              overflowX: 'auto',
+              maxWidth: '100%',
+            }}
+          >
             <button
               type="button"
               className={`tag ${activeTab === 'trending' ? 'active' : ''}`}
               onClick={() => setActiveTab('trending')}
-              style={{ padding: '8px 16px', borderRadius: 999, fontSize: '0.84rem' }}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 999,
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                whiteSpace: 'nowrap',
+              }}
             >
-              <Flame size={13} /> Trending
+              <Flame size={14} /> Trending
             </button>
             <button
               type="button"
               className={`tag ${activeTab === 'new' ? 'active' : ''}`}
               onClick={() => setActiveTab('new')}
-              style={{ padding: '8px 16px', borderRadius: 999, fontSize: '0.84rem' }}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 999,
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                whiteSpace: 'nowrap',
+              }}
             >
-              <Sparkles size={13} /> New Drops
+              <Sparkles size={14} /> New Drops
             </button>
             <button
               type="button"
               className={`tag ${activeTab === 'deals' ? 'active' : ''}`}
               onClick={() => setActiveTab('deals')}
-              style={{ padding: '8px 16px', borderRadius: 999, fontSize: '0.84rem' }}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 999,
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                whiteSpace: 'nowrap',
+              }}
             >
-              <Tag size={13} /> Special Deals
+              <Tag size={14} /> Special Deals
             </button>
           </div>
         </div>
 
-        {/* Product Grid */}
+        {/* Product Grid (Curated 4 items) */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
             <div className="loader" style={{ margin: '0 auto 16px' }} />
-            <p style={{ color: 'var(--muted)', fontWeight: 600 }}>Loading latest collection…</p>
+            <p style={{ color: 'var(--muted)', fontWeight: 600 }}>Loading curated favorites…</p>
           </div>
         ) : displayedProducts.length ? (
-          <div className="product-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
+          <div
+            className="product-grid"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+              gap: 20,
+            }}
+          >
             {displayedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (
           <div style={{ textAlign: 'center', padding: 40, background: 'var(--panel)', borderRadius: 18, border: '1px solid var(--border)' }}>
-            <p style={{ color: 'var(--muted)' }}>No products found in this category.</p>
+            <p style={{ color: 'var(--muted)' }}>No styles found for this filter.</p>
           </div>
         )}
 
         {/* View all footer CTA */}
-        <div style={{ textAlign: 'center', marginTop: 36 }}>
-          <Link to="/products" className="btn btn-primary" style={{ padding: '12px 28px', fontSize: '0.95rem' }}>
-            View Full Catalog ({products.length > 0 ? products.length : '100+'} Styles) <ArrowRight size={17} />
+        <div style={{ textAlign: 'center', marginTop: 32 }}>
+          <Link
+            to="/products"
+            className="btn btn-primary"
+            style={{
+              padding: '12px 28px',
+              fontSize: '0.92rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              boxShadow: 'var(--shadow-accent)',
+            }}
+          >
+            Explore All {products.length > 0 ? products.length : '14+'} Garment Styles <ArrowRight size={16} />
           </Link>
         </div>
       </div>

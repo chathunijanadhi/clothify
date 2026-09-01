@@ -354,20 +354,27 @@ export function CustomerOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let mounted = true;
-    async function load() {
-      try {
-        const data = await orderService.getMyOrders();
-        if (mounted) setOrders(data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        if (mounted) setLoading(false);
-      }
+  // Review modal state
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [selectedProductForReview, setSelectedProductForReview] = useState<{ id: string; name: string; image?: string; currentRating?: number; currentText?: string } | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewSuccessMsg, setReviewSuccessMsg] = useState<string | null>(null);
+
+  const loadOrders = async () => {
+    try {
+      const data = await orderService.getMyOrders();
+      setOrders(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    load();
-    return () => { mounted = false; };
+  };
+
+  useEffect(() => {
+    loadOrders();
   }, []);
 
   const statusBadge = (ps: string, status?: string) => {
@@ -409,8 +416,43 @@ export function CustomerOrdersPage() {
     return { currentStep: 1, width: '25%', label: 'Verification Pending' };
   };
 
+  const handleOpenReview = (item: any) => {
+    setSelectedProductForReview({
+      id: item.product_id,
+      name: item.product_name || 'Garment Piece',
+      image: item.product_image,
+      currentRating: item.user_rating || 5,
+      currentText: item.user_review || '',
+    });
+    setReviewRating(item.user_rating || 5);
+    setReviewComment(item.user_review || '');
+    setReviewSuccessMsg(null);
+    setReviewModalOpen(true);
+  };
+
+  const handleSubmitReview = async () => {
+    if (!selectedProductForReview?.id) return;
+    setSubmittingReview(true);
+    try {
+      const reviewService = await import('../../services/review.service');
+      await reviewService.submitReview(selectedProductForReview.id, {
+        rating: reviewRating,
+        reviewText: reviewComment,
+      });
+      setReviewSuccessMsg('Your review and rating have been published!');
+      setTimeout(() => {
+        setReviewModalOpen(false);
+        loadOrders();
+      }, 1400);
+    } catch (err: any) {
+      alert(err?.response?.data?.message || err?.message || 'Unable to submit review.');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
   return (
-    <CustomerLayout title="My Orders &amp; Delivery Tracking" description="Track purchases, delivery timelines, and payment receipts.">
+    <CustomerLayout title="My Orders &amp; Delivery Tracking" description="Track purchases, delivery timelines, and rate received garments.">
       <div style={cs.sectionCard}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -428,6 +470,8 @@ export function CustomerOrdersPage() {
                 { key: 'processing', label: 'Processing', completed: progress.currentStep >= 3 },
                 { key: 'delivery', label: progress.currentStep >= 4 ? 'Shipped' : 'Delivered', completed: progress.currentStep >= 4 },
               ];
+
+              const isEligibleForReview = progress.currentStep >= 2;
 
               return (
                 <div key={order.id} style={cs.orderCard}>
@@ -467,8 +511,75 @@ export function CustomerOrdersPage() {
                     })}
                   </div>
 
-                  {/* Order details grid */}
-                  <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 14, background: 'var(--panel-soft)', padding: 14, borderRadius: 12 }}>
+                  {/* Order Items List with Rate & Review Action */}
+                  {Array.isArray(order.items) && order.items.length > 0 && (
+                    <div style={{ marginTop: 18, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+                      <span style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--primary)', display: 'block', marginBottom: 10 }}>
+                        Purchased Items ({order.items.length})
+                      </span>
+                      <div style={{ display: 'grid', gap: 10 }}>
+                        {order.items.map((item: any, idx: number) => (
+                          <div
+                            key={item.id || idx}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: 12,
+                              background: 'var(--panel-soft)',
+                              padding: '10px 14px',
+                              borderRadius: 12,
+                              flexWrap: 'wrap',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                              <img
+                                src={item.product_image || 'https://res.cloudinary.com/efjuzuge/image/upload/v1787853829/pexels-emrekeshavarz-19607463.jpg'}
+                                alt={item.product_name}
+                                style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)' }}
+                              />
+                              <div>
+                                <strong style={{ fontSize: '0.92rem', color: 'var(--primary)', display: 'block' }}>
+                                  {item.product_name}
+                                </strong>
+                                <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+                                  Qty: {item.quantity} {item.size ? `· Size: ${item.size}` : ''} {item.color ? `· Color: ${item.color}` : ''}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <strong style={{ fontSize: '0.92rem', color: 'var(--primary)' }}>
+                                LKR {Number(item.unit_price || 0).toLocaleString()}
+                              </strong>
+
+                              {isEligibleForReview && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenReview(item)}
+                                  className="tag active"
+                                  style={{
+                                    padding: '6px 12px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 700,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 5,
+                                  }}
+                                >
+                                  <Star size={13} fill="currentColor" />
+                                  {item.user_rating ? `Rated ★ ${item.user_rating}` : 'Rate Garment'}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Order details summary */}
+                  <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 12, background: 'var(--panel)', padding: 14, borderRadius: 12, border: '1px solid var(--border)' }}>
                     <div>
                       <span style={cs.label}>Order Status</span>
                       <strong style={{ color: 'var(--primary)', textTransform: 'capitalize' }}>
@@ -476,14 +587,14 @@ export function CustomerOrdersPage() {
                       </strong>
                     </div>
                     <div>
-                      <span style={cs.label}>Payment Mode</span>
+                      <span style={cs.label}>Payment Method</span>
                       <strong style={{ color: 'var(--primary)' }}>
                         {order.payment_method === 'bank_transfer' ? '🏦 Bank Transfer' : '💳 Card / Online'}
                       </strong>
                     </div>
                     <div>
-                      <span style={cs.label}>Order Grand Total</span>
-                      <strong style={{ color: 'var(--accent)', fontSize: '1.1rem' }}>
+                      <span style={cs.label}>Order Total</span>
+                      <strong style={{ color: 'var(--accent)', fontSize: '1.05rem' }}>
                         LKR {Number(order.grand_total || 0).toLocaleString()}
                       </strong>
                     </div>
@@ -497,7 +608,7 @@ export function CustomerOrdersPage() {
             <Package size={40} style={{ color: 'var(--muted)', marginBottom: 12 }} />
             <h3 style={{ margin: '0 0 6px', color: 'var(--primary)' }}>No Orders Placed Yet</h3>
             <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.9rem' }}>
-              When you check out pieces from Clothify, you will be able to track delivery progress here.
+              When you check out pieces from Clothify, you will be able to track delivery progress and rate received items here.
             </p>
             <Link to="/products" className="btn btn-primary" style={{ marginTop: 18, display: 'inline-flex' }}>
               Explore Collection
@@ -505,6 +616,120 @@ export function CustomerOrdersPage() {
           </div>
         )}
       </div>
+
+      {/* ── Rating & Review Modal ── */}
+      {reviewModalOpen && selectedProductForReview && (
+        <div className="cf-modal-backdrop" onClick={() => setReviewModalOpen(false)}>
+          <div className="cf-modal-box" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
+            <div className="cf-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Star size={20} color="var(--accent)" fill="var(--accent)" />
+                <h3 style={{ margin: 0 }}>Rate &amp; Review Garment</h3>
+              </div>
+              <button type="button" className="cf-modal-close" onClick={() => setReviewModalOpen(false)}>
+                ✕
+              </button>
+            </div>
+
+            <div className="cf-modal-body">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, background: 'var(--panel-soft)', padding: 10, borderRadius: 12 }}>
+                <img
+                  src={selectedProductForReview.image || 'https://res.cloudinary.com/efjuzuge/image/upload/v1787853829/pexels-emrekeshavarz-19607463.jpg'}
+                  alt={selectedProductForReview.name}
+                  style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover' }}
+                />
+                <div>
+                  <strong style={{ fontSize: '0.92rem', color: 'var(--primary)' }}>{selectedProductForReview.name}</strong>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Verified Purchase Review</div>
+                </div>
+              </div>
+
+              {/* Star Rating Picker */}
+              <div style={{ textAlign: 'center', margin: '14px 0 20px' }}>
+                <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>
+                  Your Overall Rating
+                </span>
+                <div style={{ display: 'inline-flex', gap: 8, justifyContent: 'center' }}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setReviewRating(star)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: 4,
+                        color: star <= reviewRating ? '#f59e0b' : '#d1d5db',
+                        transform: star <= reviewRating ? 'scale(1.15)' : 'scale(1)',
+                        transition: 'transform 0.15s ease',
+                      }}
+                      title={`${star} Star${star > 1 ? 's' : ''}`}
+                    >
+                      <Star size={32} fill={star <= reviewRating ? '#f59e0b' : 'none'} />
+                    </button>
+                  ))}
+                </div>
+                <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#f59e0b', marginTop: 6 }}>
+                  {reviewRating === 5 ? '⭐⭐⭐⭐⭐ Exceptional Quality' :
+                   reviewRating === 4 ? '⭐⭐⭐⭐ Great Fit & Style' :
+                   reviewRating === 3 ? '⭐⭐⭐ Average Experience' :
+                   reviewRating === 2 ? '⭐⭐ Below Expectations' : '⭐ Poor'}
+                </div>
+              </div>
+
+              {/* Feedback text */}
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: 'var(--primary)', marginBottom: 6 }}>
+                  Write Your Review (Optional)
+                </label>
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Share details about the fabric softness, sizing fit, and overall comfort..."
+                  style={{
+                    width: '100%',
+                    minHeight: 90,
+                    padding: '10px 12px',
+                    borderRadius: 12,
+                    border: '1.5px solid var(--border)',
+                    background: 'var(--panel)',
+                    color: 'var(--text)',
+                    fontSize: '0.88rem',
+                    resize: 'vertical',
+                  }}
+                />
+              </div>
+
+              {reviewSuccessMsg && (
+                <div style={{ background: '#dcfce7', color: '#166534', padding: '10px 14px', borderRadius: 10, fontSize: '0.84rem', fontWeight: 700, marginBottom: 14, textAlign: 'center' }}>
+                  ✓ {reviewSuccessMsg}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setReviewModalOpen(false)}
+                  className="btn btn-secondary"
+                  style={{ flex: 1 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmitReview}
+                  disabled={submittingReview}
+                  className="btn btn-primary"
+                  style={{ flex: 2 }}
+                >
+                  {submittingReview ? 'Submitting…' : 'Submit Review'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </CustomerLayout>
   );
 }

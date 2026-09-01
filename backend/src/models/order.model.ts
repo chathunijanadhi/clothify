@@ -161,7 +161,27 @@ export const createOrder = async (userId: string, payload: CreateOrderPayload = 
 export const getOrdersByUser = async (userId: string) => {
   const result = await pool.query(
     `SELECT o.*, p.payment_method, p.status AS payment_row_status, p.payment_details,
-            COALESCE((SELECT COUNT(*) FROM order_items WHERE order_id = o.id), 0)::int AS item_count
+            COALESCE((SELECT COUNT(*) FROM order_items WHERE order_id = o.id), 0)::int AS item_count,
+            COALESCE((
+              SELECT json_agg(json_build_object(
+                'id', oi.id,
+                'product_id', oi.product_id,
+                'product_name', pr.name,
+                'product_image', (SELECT image_url FROM product_images pi WHERE pi.product_id = pr.id ORDER BY is_primary DESC, created_at ASC LIMIT 1),
+                'quantity', oi.quantity,
+                'unit_price', oi.unit_price,
+                'total_price', oi.total_price,
+                'size', pv.size,
+                'color', pv.color,
+                'user_rating', rev.rating,
+                'user_review', rev.review_text
+              ))
+              FROM order_items oi
+              LEFT JOIN products pr ON pr.id = oi.product_id
+              LEFT JOIN product_variants pv ON pv.id = oi.variant_id
+              LEFT JOIN reviews rev ON rev.product_id = oi.product_id AND rev.user_id = o.user_id
+              WHERE oi.order_id = o.id
+            ), '[]'::json) AS items
      FROM orders o
      LEFT JOIN payments p ON p.order_id = o.id
      WHERE o.user_id = $1
