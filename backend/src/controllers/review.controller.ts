@@ -1,6 +1,17 @@
 import { Request, Response } from 'express';
 import * as reviewService from '../services/review.service';
 
+export const getFeaturedReviews = async (req: Request, res: Response) => {
+  try {
+    const limit = Math.min(20, Math.max(1, Number(req.query.limit || 6)));
+    const reviews = await reviewService.getFeaturedReviews(limit);
+    return res.json({ success: true, data: { reviews } });
+  } catch (error: any) {
+    console.error('Error fetching featured reviews:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load featured reviews', error: error.message });
+  }
+};
+
 export const getProductReviews = async (req: Request, res: Response) => {
   try {
     const productId = String(req.params.productId);

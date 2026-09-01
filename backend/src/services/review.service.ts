@@ -43,6 +43,37 @@ export const getReviewsByProduct = async (productId: string): Promise<ReviewItem
   });
 };
 
+export const getFeaturedReviews = async (limit = 6): Promise<any[]> => {
+  const query = `
+    SELECT r.id, r.user_id, r.product_id, r.rating, r.review_text, r.is_verified,
+           r.created_at, r.updated_at,
+           u.full_name, u.email,
+           p.name AS product_name
+    FROM reviews r
+    LEFT JOIN users u ON u.id = r.user_id
+    LEFT JOIN products p ON p.id = r.product_id
+    WHERE r.rating >= 4
+    ORDER BY r.created_at DESC
+    LIMIT $1
+  `;
+  const result = await pool.query(query, [limit]);
+  return result.rows.map((row) => {
+    const fullName = String(row.full_name || '').trim() || 'Verified Shopper';
+    const initials = fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'VS';
+    return {
+      id: row.id,
+      name: fullName,
+      location: 'Sri Lanka',
+      rating: Number(row.rating),
+      title: Number(row.rating) === 5 ? 'Flawless tailoring & premium fabric' : 'Great quality & fit',
+      comment: row.review_text || 'Exceptional craftsmanship and comfortable fit. Exceeded expectations!',
+      itemPurchased: row.product_name || 'Clothify Signature Piece',
+      avatar: initials,
+      verified: Boolean(row.is_verified),
+    };
+  });
+};
+
 export const getUserReview = async (userId: string, productId: string) => {
   const res = await pool.query(
     'SELECT * FROM reviews WHERE user_id = $1 AND product_id = $2 LIMIT 1',

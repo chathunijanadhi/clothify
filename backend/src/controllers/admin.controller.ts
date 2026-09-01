@@ -152,6 +152,39 @@ export const updatePaymentStatus = async (req: Request, res: Response) => {
   }
 };
 
+export const updateOrderStatus = async (req: Request, res: Response) => {
+  try {
+    const orderId = String(req.params.orderId ?? '');
+    const status = String(req.body?.status ?? '').toLowerCase();
+
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'Order ID is required' });
+    }
+
+    const validStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: `Status must be one of: ${validStatuses.join(', ')}` });
+    }
+
+    const result = await pool.query(
+      `UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+      [status, orderId]
+    );
+
+    if (!result.rows[0]) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    return res.json({
+      success: true,
+      message: `Order status updated to ${status}`,
+      data: { order: result.rows[0] },
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: 'Unable to update order status', error: error.message || 'SERVER_ERROR' });
+  }
+};
+
 export const getCatalog = async (_req: Request, res: Response) => {
   try {
     const products = await productService.getProducts({}, 1, 200);

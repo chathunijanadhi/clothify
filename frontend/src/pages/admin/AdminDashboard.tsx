@@ -297,11 +297,33 @@ export function AdminOrdersPage() {
     }
   };
 
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    setProcessing(orderId);
+    try {
+      await adminService.updateOrderStatus(orderId, newStatus);
+      await load();
+    } catch (err: any) {
+      alert(err?.response?.data?.message || err?.message || 'Failed to update order status');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
   const paymentBadge = (ps: string) => {
     const normalized = String(ps || '').toLowerCase();
     if (normalized === 'paid') return { background: '#dcfce7', color: '#166534', label: 'Paid ✓' };
     if (normalized === 'failed' || normalized === 'rejected') return { background: '#fee2e2', color: '#991b1b', label: 'Rejected ✕' };
     return { background: '#fef3c7', color: '#92400e', label: 'Pending Review' };
+  };
+
+  const orderStatusBadge = (st: string) => {
+    const normalized = String(st || '').toLowerCase();
+    if (normalized === 'delivered') return { background: '#dcfce7', color: '#166534', label: 'Delivered 🎉' };
+    if (normalized === 'shipped') return { background: '#e0f2fe', color: '#0369a1', label: 'Shipped 🚚' };
+    if (normalized === 'processing') return { background: '#fef3c7', color: '#92400e', label: 'Processing 📦' };
+    if (normalized === 'confirmed') return { background: '#ede9fe', color: '#6d28d9', label: 'Confirmed ✓' };
+    if (normalized === 'cancelled') return { background: '#fee2e2', color: '#991b1b', label: 'Cancelled ✕' };
+    return { background: '#f3f4f6', color: '#4b5563', label: 'Pending ⏳' };
   };
 
   const filteredOrders = useMemo(() => {
@@ -319,7 +341,7 @@ export function AdminOrdersPage() {
 
 
   return (
-    <AdminShell title="Store Orders" subtitle="Review incoming purchases, customer receipts, and verify payment settlements.">
+    <AdminShell title="Store Orders" subtitle="Review incoming purchases, customer receipts, and update live order fulfillment tracking.">
       {/* Filters bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -371,6 +393,7 @@ export function AdminOrdersPage() {
                 <th>Customer</th>
                 <th>Payment Method</th>
                 <th>Payment Status</th>
+                <th>Fulfillment State</th>
                 <th>Bank Slip</th>
                 <th>Order Total</th>
                 <th>Placed Date</th>
@@ -380,6 +403,7 @@ export function AdminOrdersPage() {
             <tbody>
               {filteredOrders.map((order) => {
                 const badgeInfo = paymentBadge(order.payment_status);
+                const orderBadge = orderStatusBadge(order.status);
                 return (
                   <tr key={order.id}>
                     <td>
@@ -406,6 +430,30 @@ export function AdminOrdersPage() {
                       <span style={{ ...s.badge, background: badgeInfo.background, color: badgeInfo.color }}>
                         {badgeInfo.label}
                       </span>
+                    </td>
+                    <td>
+                      <select
+                        value={order.status || 'pending'}
+                        disabled={processing === order.id}
+                        onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: 8,
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          border: '1.5px solid var(--border)',
+                          background: orderBadge.background,
+                          color: orderBadge.color,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <option value="pending">⏳ Pending</option>
+                        <option value="confirmed">✓ Confirmed</option>
+                        <option value="processing">📦 Processing</option>
+                        <option value="shipped">🚚 Shipped</option>
+                        <option value="delivered">🎉 Delivered</option>
+                        <option value="cancelled">✕ Cancelled</option>
+                      </select>
                     </td>
                     <td>
                       {order.slipImage ? (
@@ -461,7 +509,7 @@ export function AdminOrdersPage() {
                           </button>
                         </div>
                       ) : (
-                        <span style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>Completed</span>
+                        <span style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>Settled</span>
                       )}
                     </td>
                   </tr>

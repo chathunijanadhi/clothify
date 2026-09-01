@@ -1,42 +1,46 @@
+import { useEffect, useState } from 'react';
 import { Star, Quote } from 'lucide-react';
+import * as reviewService from '../../services/review.service';
 
-const reviews = [
-  {
-    id: 1,
-    name: 'Dilini Senanayake',
-    location: 'Colombo, Sri Lanka',
-    rating: 5,
-    title: 'Flawless tailoring & premium fabric',
-    comment: 'The quality of the Linen Maxi Dress exceeded all my expectations! The cut is flattering, the stitching is impeccable, and delivery arrived the very next day.',
-    itemPurchased: 'Linen Belted Maxi Dress',
-    avatar: 'DS',
-    verified: true,
-  },
-  {
-    id: 2,
-    name: 'Kavinda Perera',
-    location: 'Kandy, Sri Lanka',
-    rating: 5,
-    title: 'Best men\'s formal shirts I own',
-    comment: 'Ordered two slim-fit oxford shirts for work. They hold shape brilliantly after multiple washes and breathe well in the humidity. 10/10 recommend!',
-    itemPurchased: 'Classic Oxford Button-Down',
-    avatar: 'KP',
-    verified: true,
-  },
-  {
-    id: 3,
-    name: 'Ananya Fernando',
-    location: 'Galle, Sri Lanka',
-    rating: 5,
-    title: 'Seamless bank transfer checkout',
-    comment: 'I uploaded my bank deposit slip directly during checkout and the order was verified and confirmed within 15 minutes. Truly impressive customer support!',
-    itemPurchased: 'Relaxed Wide-Leg Trousers',
-    avatar: 'AF',
-    verified: true,
-  },
-];
+interface TestimonialItem {
+  id: string | number;
+  name: string;
+  location: string;
+  rating: number;
+  title: string;
+  comment: string;
+  itemPurchased: string;
+  avatar: string;
+  verified: boolean;
+}
 
 export function TestimonialsSection() {
+  const [reviews, setReviews] = useState<TestimonialItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadReviews() {
+      try {
+        const data = await reviewService.getFeaturedReviews(3);
+        if (mounted && Array.isArray(data) && data.length > 0) {
+          setReviews(data);
+        }
+      } catch (err) {
+        console.error('Failed to load featured reviews:', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    loadReviews();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (loading && reviews.length === 0) {
+    return null;
+  }
   return (
     <section className="section-block" style={{ background: 'var(--panel-soft)' }}>
       <div className="container">

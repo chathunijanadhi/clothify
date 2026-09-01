@@ -23,6 +23,11 @@ export const getMyReview = async (productId: string): Promise<{ review: any; has
   return res.data?.data ?? { review: null, hasPurchased: false };
 };
 
+export const getFeaturedReviews = async (limit = 6): Promise<any[]> => {
+  const res = await api.get(`/reviews/featured?limit=${limit}`);
+  return res.data?.data?.reviews ?? [];
+};
+
 export const submitReview = async (productId: string, payload: { rating: number; reviewText?: string }) => {
   const res = await api.post(`/reviews/product/${productId}`, payload);
   return res.data;

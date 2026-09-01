@@ -24,3 +24,9 @@ export const updatePaymentStatus = async (orderId: string, status: 'paid' | 'rej
   const res = await api.patch(`/admin/orders/${orderId}/payment`, { status, note });
   return res.data?.data ?? null;
 };
+
+export const updateOrderStatus = async (orderId: string, status: string) => {
+  const res = await api.patch(`/admin/orders/${orderId}/status`, { status });
+  return res.data?.data ?? null;
+};
+
