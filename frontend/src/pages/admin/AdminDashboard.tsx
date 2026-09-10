@@ -8,6 +8,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../services/auth.context';
 import * as adminService from '../../services/admin.service';
 import * as productService from '../../services/product.service';
+import * as uploadService from '../../services/upload.service';
 import type { Category, Product } from '../../types/product.types';
 
 /* ────────── nav config ────────── */
@@ -26,11 +27,33 @@ function AdminShell({ title, subtitle, children }: { title: string; subtitle: st
   const navigate = useNavigate();
 
   return (
-    <div style={s.pageShell}>
-      <div style={s.container}>
+    <div className="dashboard-shell">
+      <div className="dashboard-container">
 
-        {/* ── Sidebar ── */}
-        <aside style={s.sidebar}>
+        {/* ── Mobile Horizontal Navigation Tabs ── */}
+        <div className="dashboard-mobile-tabs show-on-mobile">
+          <div className="dashboard-mobile-tabs-scroll">
+            {navItems.map(({ to, label, icon: Icon }) => {
+              const isActive = to === '/admin/dashboard'
+                ? location.pathname === to
+                : location.pathname.startsWith(to);
+              return (
+                <NavLink
+                  key={to}
+                  end={to === '/admin/dashboard'}
+                  to={to}
+                  className={`dashboard-mobile-tab-btn ${isActive ? 'active' : ''}`}
+                >
+                  <Icon size={15} />
+                  <span>{label}</span>
+                </NavLink>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Desktop Sidebar ── */}
+        <aside className="dashboard-sidebar hide-on-mobile" style={{ background: 'linear-gradient(180deg, #1a0a2e 0%, #2d1b69 60%, #3d2480 100%)' }}>
           <div style={s.brandWrap}>
             <div style={s.brandBadge}>
               <img
@@ -131,13 +154,13 @@ function AdminShell({ title, subtitle, children }: { title: string; subtitle: st
           </div>
         </aside>
 
-        {/* ── Main ── */}
-        <main style={s.mainPanel}>
-          <header style={s.header}>
+        {/* ── Main Panel ── */}
+        <main className="dashboard-main">
+          <header className="dashboard-header">
             <div>
-              <p style={s.eyebrow}>Storefront Operations</p>
-              <h1 style={s.title}>{title}</h1>
-              <p style={s.subtitle}>{subtitle}</p>
+              <p className="dashboard-eyebrow">Storefront Operations</p>
+              <h1 className="dashboard-title">{title}</h1>
+              <p className="dashboard-subtitle">{subtitle}</p>
             </div>
             <div style={s.headerActions}>
               <Link to="/products" className="btn btn-outline" style={{ fontSize: '0.84rem', padding: '8px 14px' }}>
@@ -819,7 +842,7 @@ export function AdminPaymentsPage() {
 /* ────────── Admin Catalog ────────── */
 export function AdminCatalogPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [_categories, setCategories] = useState<Category[]>([]);
+  const [, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ name: '', brand: '', segment: 'Men', categoryName: 'T-Shirts', price: '', discountPercentage: '0', description: '' });
   const [imageUrls, setImageUrls] = useState<string[]>([]);
@@ -1032,13 +1055,12 @@ export function AdminCatalogPage() {
                 if (!files.length) return;
                 setUploadingImages(true);
                 try {
-                  const uploader = await import('../../services/upload.service');
                   for (const f of files) {
                     const reader = new FileReader();
                     await new Promise((resolve, reject) => {
                       reader.onload = async () => {
                         try {
-                          const url = await uploader.uploadImage(String(reader.result || ''));
+                          const url = await uploadService.uploadImage(String(reader.result || ''));
                           setImageUrls((prev) => [...prev, url]);
                           resolve(true);
                         } catch (err) { reject(err); }

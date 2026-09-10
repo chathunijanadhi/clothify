@@ -1,30 +1,38 @@
 import { Heart, ShoppingCart, Star, Check } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import type { UIProduct } from '../../types/product.types';
 import { useAuth } from '../../services/auth.context';
+import { useCart } from '../../services/cart.context';
+import { useWishlist } from '../../services/wishlist.context';
 
 export function ProductCard({ product }: { product: UIProduct }) {
   const { user } = useAuth();
-  const [addedCart, setAddedCart] = useState(false);
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const { addToCart, isInCart } = useCart();
+  const { isWishlisted, toggleWishlist } = useWishlist();
+  const navigate = useNavigate();
+
   const [loadingCart, setLoadingCart] = useState(false);
-  const [loadingWishlist, setLoadingWishlist] = useState(false);
+  const [addedTemp, setAddedTemp] = useState(false);
+
+  const activeInWishlist = isWishlisted(product.id);
+  const activeInCart = isInCart(product.id) || addedTemp;
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!user) return;
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     if (loadingCart) return;
     setLoadingCart(true);
     try {
-      const { addItem } = await import('../../services/cart.service');
-      await addItem({ productId: product.id, quantity: 1 });
-      setAddedCart(true);
-      setTimeout(() => setAddedCart(false), 2200);
+      await addToCart({ productId: product.id, quantity: 1 });
+      setAddedTemp(true);
+      setTimeout(() => setAddedTemp(false), 2400);
     } catch (err: unknown) {
-      console.error(err);
-      // Fallback
+      console.error('Failed to add to cart:', err);
     } finally {
       setLoadingCart(false);
     }
@@ -33,29 +41,21 @@ export function ProductCard({ product }: { product: UIProduct }) {
   const handleToggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!user) return;
-    if (loadingWishlist) return;
-    setLoadingWishlist(true);
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     try {
-      const { addItem, removeItem } = await import('../../services/wishlist.service');
-      if (isWishlisted) {
-        await removeItem(product.id);
-        setIsWishlisted(false);
-      } else {
-        await addItem(product.id);
-        setIsWishlisted(true);
-      }
+      await toggleWishlist(product.id);
     } catch (err: unknown) {
-      console.error(err);
-    } finally {
-      setLoadingWishlist(false);
+      console.error('Failed to toggle wishlist:', err);
     }
   };
 
   return (
     <article className="product-card">
       <div className="product-card__image-wrap">
-        <Link to={`/products/${product.id}`} style={{ display: 'block', height: '100%' }}>
+        <Link to={`/products/${product.id}`} className="product-card__image-link">
           <img
             src={product.image || 'https://res.cloudinary.com/efjuzuge/image/upload/v1787853264/freestocks-_3Q3tsJ01nc-unsplash_1.jpg'}
             alt={product.name}
@@ -65,53 +65,43 @@ export function ProductCard({ product }: { product: UIProduct }) {
         </Link>
 
         {product.discount ? (
-          <span className="discount-badge">-{product.discount}% OFF</span>
+          <span className="discount-badge">-{product.discount}%</span>
         ) : null}
 
         <button
           type="button"
-          className={`wishlist-btn ${isWishlisted ? 'active' : ''}`}
+          className={`wishlist-btn ${activeInWishlist ? 'active' : ''}`}
           aria-label={`Save ${product.name} to wishlist`}
           onClick={handleToggleWishlist}
-          title={isWishlisted ? 'Saved to Wishlist' : 'Add to Wishlist'}
+          title={activeInWishlist ? 'Saved in Wishlist' : 'Add to Wishlist'}
         >
-          <Heart size={16} fill={isWishlisted ? 'currentColor' : 'none'} />
+          <Heart size={16} fill={activeInWishlist ? 'currentColor' : 'none'} />
         </button>
       </div>
 
       <div className="product-card__content">
         <div className="product-card__meta">
-          <span style={{ textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.74rem', fontWeight: 700, color: 'var(--accent)' }}>
+          <span className="product-card__category">
             {product.category || 'Collection'}
           </span>
-          <span className="rating" style={{ fontWeight: 700, color: '#f59e0b', fontSize: '0.8rem' }}>
-            <Star size={13} fill="#f59e0b" stroke="none" /> {product.rating ? product.rating.toFixed(1) : '4.8'}
+          <span className="rating" aria-label={`Rating ${product.rating || 4.8} out of 5`}>
+            <Star size={13} fill="#f59e0b" stroke="none" />
+            <span>{product.rating ? product.rating.toFixed(1) : '4.8'}</span>
           </span>
         </div>
 
-        <Link to={`/products/${product.id}`} style={{ textDecoration: 'none' }}>
-          <h3
-            style={{
-              fontSize: '1rem',
-              fontWeight: 700,
-              color: 'var(--primary)',
-              margin: '6px 0 10px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-            title={product.name}
-          >
+        <Link to={`/products/${product.id}`} className="product-card__title-link">
+          <h3 className="product-card__title" title={product.name}>
             {product.name}
           </h3>
         </Link>
 
-        <div className="product-card__price-row" style={{ marginBottom: 12 }}>
-          <span className="product-card__price" style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--primary)' }}>
+        <div className="product-card__price-row">
+          <span className="product-card__price">
             LKR {product.price.toLocaleString()}
           </span>
           {product.oldPrice ? (
-            <span className="product-card__old-price" style={{ fontSize: '0.86rem' }}>
+            <span className="product-card__old-price">
               LKR {product.oldPrice.toLocaleString()}
             </span>
           ) : null}
@@ -121,14 +111,14 @@ export function ProductCard({ product }: { product: UIProduct }) {
           type="button"
           className="add-cart-btn"
           onClick={handleAddToCart}
+          disabled={loadingCart}
           style={{
-            background: addedCart ? 'var(--accent-3)' : undefined,
-            transition: 'all 0.25s ease',
+            background: activeInCart ? 'var(--accent-3)' : undefined,
           }}
         >
-          {addedCart ? (
+          {activeInCart ? (
             <>
-              <Check size={16} /> Added to Bag
+              <Check size={16} /> In Bag
             </>
           ) : loadingCart ? (
             <>

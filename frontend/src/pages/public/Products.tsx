@@ -8,9 +8,11 @@ import {
   Sparkles,
   ArrowUpDown,
   ShoppingBag,
+  Grid2X2,
+  Square,
 } from 'lucide-react';
 import { ProductCard } from '../../components/product/ProductCard';
-import type { UIProduct, Product as BackendProduct, Category } from '../../types/product.types';
+import type { UIProduct, Product as BackendProduct } from '../../types/product.types';
 import * as productService from '../../services/product.service';
 
 const SEGMENTS = ['All', 'Men', 'Women', 'Kids'] as const;
@@ -34,10 +36,25 @@ export function Products() {
   const [search, setSearch] = useState(searchParam);
   const [sortBy, setSortBy] = useState('featured');
 
+  // Mobile UX state
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'two' | 'one'>('two');
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [allProducts, setAllProducts] = useState<UIProduct[]>([]);
-  const [_categories, setCategories] = useState<Category[]>([]);
+
+  // Lock body scroll when mobile filter is open
+  useEffect(() => {
+    if (mobileFilterOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileFilterOpen]);
 
   // Sync state with URL params when they change externally
   useEffect(() => {
@@ -57,10 +74,7 @@ export function Products() {
       setLoading(true);
       setError(null);
       try {
-        const [rawProducts, rawCategories] = await Promise.all([
-          productService.getProducts({ limit: 200 }),
-          productService.getCategories(),
-        ]);
+        const rawProducts = await productService.getProducts({ limit: 200 });
 
         if (!mounted) return;
 
@@ -102,7 +116,6 @@ export function Products() {
         });
 
         setAllProducts(transformed);
-        setCategories(rawCategories);
       } catch (err) {
         console.error('Failed to load catalog products', err);
         setError('Unable to load catalog products. Please check your connection.');
@@ -126,7 +139,7 @@ export function Products() {
     });
   }, [allProducts, selectedSegment]);
 
-  // Derive available categories dynamically for the current segment
+  // Derive available categories dynamically for current segment
   const dynamicCategories = useMemo(() => {
     const categoryCounts = new Map<string, number>();
 
@@ -181,13 +194,11 @@ export function Products() {
 
   // Compute final filtered products
   const filteredProducts = useMemo(() => {
-    let list = segmentProducts.filter((product) => {
-      // Category filter
+    const list = segmentProducts.filter((product) => {
       const matchesCategory =
         selectedCategory === 'All' ||
         product.category.toLowerCase() === selectedCategory.toLowerCase();
 
-      // Search filter
       const searchTerms = search.toLowerCase().trim();
       const matchesSearch =
         !searchTerms ||
@@ -196,21 +207,17 @@ export function Products() {
         product.category.toLowerCase().includes(searchTerms) ||
         (product.description && product.description.toLowerCase().includes(searchTerms));
 
-      // Price filter
       const matchesPrice = maxPrice === null || product.price <= maxPrice;
 
-      // Size filter
       const matchesSize =
         !selectedSize ||
         (product.sizes && product.sizes.map((s) => s.toUpperCase()).includes(selectedSize.toUpperCase()));
 
-      // In stock filter
       const matchesStock = !inStockOnly || product.stock > 0;
 
       return matchesCategory && matchesSearch && matchesPrice && matchesSize && matchesStock;
     });
 
-    // Sorting
     switch (sortBy) {
       case 'low-high':
         return [...list].sort((a, b) => a.price - b.price);
@@ -226,7 +233,6 @@ export function Products() {
     }
   }, [segmentProducts, selectedCategory, search, maxPrice, selectedSize, inStockOnly, sortBy]);
 
-  // Change segment handler
   const handleSegmentChange = (seg: SegmentType) => {
     setSelectedSegment(seg);
     setSelectedCategory('All');
@@ -240,7 +246,6 @@ export function Products() {
     setSearchParams(nextParams);
   };
 
-  // Change category handler
   const handleCategoryChange = (catName: string) => {
     setSelectedCategory(catName);
     const nextParams = new URLSearchParams(searchParams);
@@ -252,7 +257,6 @@ export function Products() {
     setSearchParams(nextParams);
   };
 
-  // Clear all filters
   const clearAllFilters = () => {
     setSelectedSegment('All');
     setSelectedCategory('All');
@@ -263,13 +267,220 @@ export function Products() {
     setSearchParams({});
   };
 
-  const hasActiveFilters =
-    selectedSegment !== 'All' ||
-    selectedCategory !== 'All' ||
-    selectedSize !== null ||
-    maxPrice !== null ||
-    inStockOnly ||
-    Boolean(search);
+  const activeFilterCount =
+    (selectedSegment !== 'All' ? 1 : 0) +
+    (selectedCategory !== 'All' ? 1 : 0) +
+    (selectedSize !== null ? 1 : 0) +
+    (maxPrice !== null ? 1 : 0) +
+    (inStockOnly ? 1 : 0) +
+    (search ? 1 : 0);
+
+  const hasActiveFilters = activeFilterCount > 0;
+
+  // Reusable Filter Body controls
+  const renderFilterControls = () => (
+    <>
+      {/* Keyword Search */}
+      <div className="filter-group">
+        <label>Search Keyword</label>
+        <div className="auth-input-wrapper">
+          <span className="auth-input-icon">
+            <Search size={15} />
+          </span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="e.g. Linen, Cotton, Dress..."
+            className="auth-input-element"
+            style={{ minHeight: 40, paddingLeft: 36, paddingRight: search ? 30 : 12 }}
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch('');
+                const next = new URLSearchParams(searchParams);
+                next.delete('search');
+                setSearchParams(next);
+              }}
+              className="auth-input-action"
+              style={{ right: 8 }}
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Sort selection (inside mobile filter drawer) */}
+      <div className="filter-group show-in-drawer-only">
+        <label>Sort By</label>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="auth-input-element"
+          style={{ paddingLeft: 14 }}
+        >
+          <option value="featured">✨ Featured &amp; Trending</option>
+          <option value="low-high">Price: Low to High</option>
+          <option value="high-low">Price: High to Low</option>
+          <option value="rating">Top Customer Rated (★)</option>
+          <option value="discount">Biggest Discounts (%)</option>
+        </select>
+      </div>
+
+      {/* Categories */}
+      <div className="filter-group">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <label>Category ({selectedSegment})</label>
+          <span style={{ fontSize: '0.74rem', color: 'var(--muted)', fontWeight: 600 }}>
+            {dynamicCategories.length - 1} options
+          </span>
+        </div>
+        <div className="tag-row">
+          {dynamicCategories.map((cat) => {
+            const isActive = selectedCategory.toLowerCase() === cat.name.toLowerCase();
+            return (
+              <button
+                key={cat.name}
+                type="button"
+                className={`tag ${isActive ? 'active' : ''}`}
+                onClick={() => handleCategoryChange(cat.name)}
+                style={{
+                  padding: '7px 14px',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>{cat.name}</span>
+                <span
+                  style={{
+                    fontSize: '0.7rem',
+                    background: isActive ? 'var(--accent)' : 'var(--border)',
+                    color: isActive ? 'white' : 'var(--muted)',
+                    padding: '1px 6px',
+                    borderRadius: 999,
+                    fontWeight: 800,
+                  }}
+                >
+                  {cat.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Sizes */}
+      <div className="filter-group">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <label>Filter By Size</label>
+          {selectedSize && (
+            <button
+              type="button"
+              onClick={() => setSelectedSize(null)}
+              style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer' }}
+            >
+              Clear Size
+            </button>
+          )}
+        </div>
+        <div className="tag-row">
+          {SIZES.map((size) => {
+            const isSelected = selectedSize === size;
+            const count = sizeAvailability.get(size) || 0;
+            const isDisabled = count === 0;
+
+            return (
+              <button
+                key={size}
+                type="button"
+                className={`tag ${isSelected ? 'active' : ''}`}
+                disabled={isDisabled}
+                onClick={() => setSelectedSize(isSelected ? null : size)}
+                style={{
+                  minWidth: 42,
+                  textAlign: 'center',
+                  padding: '7px 10px',
+                  fontWeight: 800,
+                  opacity: isDisabled ? 0.35 : 1,
+                  cursor: isDisabled ? 'not-allowed' : 'pointer',
+                  display: 'inline-flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                }}
+                title={`${count} styles in size ${size}`}
+              >
+                <span>{size}</span>
+                <span style={{ fontSize: '0.64rem', opacity: 0.75 }}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Price Range */}
+      <div className="filter-group">
+        <label>Budget / Price Range</label>
+        <div className="tag-row">
+          <button
+            type="button"
+            className={`tag ${maxPrice === null ? 'active' : ''}`}
+            onClick={() => setMaxPrice(null)}
+          >
+            All Prices
+          </button>
+          <button
+            type="button"
+            className={`tag ${maxPrice === 3000 ? 'active' : ''}`}
+            onClick={() => setMaxPrice(maxPrice === 3000 ? null : 3000)}
+          >
+            Under 3K
+          </button>
+          <button
+            type="button"
+            className={`tag ${maxPrice === 6000 ? 'active' : ''}`}
+            onClick={() => setMaxPrice(maxPrice === 6000 ? null : 6000)}
+          >
+            Under 6K
+          </button>
+          <button
+            type="button"
+            className={`tag ${maxPrice === 10000 ? 'active' : ''}`}
+            onClick={() => setMaxPrice(maxPrice === 10000 ? null : 10000)}
+          >
+            Under 10K
+          </button>
+        </div>
+      </div>
+
+      {/* In Stock Only */}
+      <div className="filter-group" style={{ marginTop: 14 }}>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            cursor: 'pointer',
+            fontSize: '0.88rem',
+            fontWeight: 600,
+            color: 'var(--primary)',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={inStockOnly}
+            onChange={(e) => setInStockOnly(e.target.checked)}
+            style={{ width: 18, height: 18, accentColor: 'var(--accent)', cursor: 'pointer' }}
+          />
+          <span>In Stock Only ({segmentProducts.filter((p) => p.stock > 0).length})</span>
+        </label>
+      </div>
+    </>
+  );
 
   return (
     <div className="page-shell">
@@ -309,9 +520,9 @@ export function Products() {
             </h1>
           </div>
 
-          <div className="sort-box">
+          <div className="sort-box hide-on-mobile">
             <label htmlFor="sort" style={{ fontWeight: 700, fontSize: '0.88rem', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-              <ArrowUpDown size={14} /> Sort By:
+              <ArrowUpDown size={14} /> Sort:
             </label>
             <select
               id="sort"
@@ -328,16 +539,8 @@ export function Products() {
           </div>
         </div>
 
-        {/* ── Segment Tabs Bar ── */}
-        <div
-          style={{
-            display: 'flex',
-            gap: 12,
-            marginBottom: 24,
-            overflowX: 'auto',
-            paddingBottom: 6,
-          }}
-        >
+        {/* ── Segment Tabs Bar (Horizontal swipeable) ── */}
+        <div className="segment-tabs-wrap">
           {SEGMENTS.map((seg) => {
             const isSelected = selectedSegment === seg;
             const count =
@@ -349,36 +552,11 @@ export function Products() {
               <button
                 key={seg}
                 type="button"
-                className={`tag ${isSelected ? 'active' : ''}`}
-                style={{
-                  padding: '11px 22px',
-                  borderRadius: 999,
-                  fontSize: '0.92rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  border: isSelected ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
-                  background: isSelected ? 'var(--grad-accent)' : 'var(--panel)',
-                  color: isSelected ? 'white' : 'var(--primary)',
-                  boxShadow: isSelected ? 'var(--shadow-accent)' : 'var(--shadow-sm)',
-                  transition: 'all 0.22s ease',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  whiteSpace: 'nowrap',
-                }}
+                className={`tag segment-pill ${isSelected ? 'active' : ''}`}
                 onClick={() => handleSegmentChange(seg)}
               >
                 <span>{seg === 'All' ? '🌟 All Styles' : `${segmentLabel(seg)} Fashion`}</span>
-                <span
-                  style={{
-                    background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--panel-soft)',
-                    color: isSelected ? 'white' : 'var(--muted)',
-                    padding: '2px 8px',
-                    borderRadius: 999,
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                  }}
-                >
+                <span className="segment-count-badge">
                   {count}
                 </span>
               </button>
@@ -386,52 +564,88 @@ export function Products() {
           })}
         </div>
 
-        {/* ── Active Filters Bar ── */}
-        {hasActiveFilters && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              flexWrap: 'wrap',
-              marginBottom: 20,
-              background: 'var(--panel)',
-              padding: '12px 18px',
-              borderRadius: 16,
-              border: '1px solid var(--border)',
-            }}
+        {/* ── Mobile Filter Toolbar (Visible only on mobile/tablets) ── */}
+        <div className="mobile-catalog-toolbar">
+          <button
+            type="button"
+            className="mobile-filter-trigger-btn"
+            onClick={() => setMobileFilterOpen(true)}
           >
-            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Active Filters:
-            </span>
+            <SlidersHorizontal size={17} color="var(--accent)" />
+            <span>Filter &amp; Sort</span>
+            {activeFilterCount > 0 && (
+              <span className="mobile-filter-badge">{activeFilterCount}</span>
+            )}
+          </button>
+
+          <div className="mobile-view-toggle">
+            <button
+              type="button"
+              className={`view-toggle-btn ${viewMode === 'two' ? 'active' : ''}`}
+              onClick={() => setViewMode('two')}
+              aria-label="2-column compact grid"
+              title="2-column view"
+            >
+              <Grid2X2 size={18} />
+            </button>
+            <button
+              type="button"
+              className={`view-toggle-btn ${viewMode === 'one' ? 'active' : ''}`}
+              onClick={() => setViewMode('one')}
+              aria-label="1-column detailed card view"
+              title="1-column view"
+            >
+              <Square size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* ── Quick Category Chips (Mobile Horizontal Scroll) ── */}
+        <div className="mobile-category-scroll show-on-mobile">
+          {dynamicCategories.map((cat) => {
+            const isActive = selectedCategory.toLowerCase() === cat.name.toLowerCase();
+            return (
+              <button
+                key={cat.name}
+                type="button"
+                className={`mobile-cat-chip ${isActive ? 'active' : ''}`}
+                onClick={() => handleCategoryChange(cat.name)}
+              >
+                {cat.name} ({cat.count})
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── Active Filters Chips Bar ── */}
+        {hasActiveFilters && (
+          <div className="active-filters-bar">
+            <span className="active-filters-label">Active:</span>
 
             {selectedSegment !== 'All' && (
               <button
                 type="button"
-                className="tag active"
-                style={{ padding: '5px 12px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                className="tag active filter-chip-removable"
                 onClick={() => handleSegmentChange('All')}
               >
-                Department: {selectedSegment} <X size={13} />
+                Dept: {selectedSegment} <X size={13} />
               </button>
             )}
 
             {selectedCategory !== 'All' && (
               <button
                 type="button"
-                className="tag active"
-                style={{ padding: '5px 12px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                className="tag active filter-chip-removable"
                 onClick={() => handleCategoryChange('All')}
               >
-                Category: {selectedCategory} <X size={13} />
+                Cat: {selectedCategory} <X size={13} />
               </button>
             )}
 
             {selectedSize && (
               <button
                 type="button"
-                className="tag active"
-                style={{ padding: '5px 12px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                className="tag active filter-chip-removable"
                 onClick={() => setSelectedSize(null)}
               >
                 Size: {selectedSize} <X size={13} />
@@ -441,30 +655,27 @@ export function Products() {
             {maxPrice !== null && (
               <button
                 type="button"
-                className="tag active"
-                style={{ padding: '5px 12px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                className="tag active filter-chip-removable"
                 onClick={() => setMaxPrice(null)}
               >
-                Max Price: LKR {maxPrice.toLocaleString()} <X size={13} />
+                &le; LKR {maxPrice.toLocaleString()} <X size={13} />
               </button>
             )}
 
             {inStockOnly && (
               <button
                 type="button"
-                className="tag active"
-                style={{ padding: '5px 12px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                className="tag active filter-chip-removable"
                 onClick={() => setInStockOnly(false)}
               >
-                In Stock Only <X size={13} />
+                In Stock <X size={13} />
               </button>
             )}
 
             {search && (
               <button
                 type="button"
-                className="tag active"
-                style={{ padding: '5px 12px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                className="tag active filter-chip-removable"
                 onClick={() => {
                   setSearch('');
                   const next = new URLSearchParams(searchParams);
@@ -472,38 +683,27 @@ export function Products() {
                   setSearchParams(next);
                 }}
               >
-                Search: "{search}" <X size={13} />
+                "{search}" <X size={13} />
               </button>
             )}
 
             <button
               type="button"
               onClick={clearAllFilters}
-              style={{
-                marginLeft: 'auto',
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--accent)',
-                fontWeight: 700,
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-              }}
+              className="clear-all-filters-btn"
             >
-              <RotateCcw size={13} /> Clear All
+              <RotateCcw size={13} /> Clear
             </button>
           </div>
         )}
 
         <div className="shop-layout">
-          {/* ── Left Filter Sidebar ── */}
-          <aside className="filter-panel">
+          {/* ── Desktop Left Filter Sidebar ── */}
+          <aside className="filter-panel hide-on-mobile">
             <div className="filter-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <SlidersHorizontal size={18} color="var(--accent)" />
-                <strong>Filter Categories</strong>
+                <strong>Filter Styles</strong>
               </div>
               {hasActiveFilters && (
                 <button
@@ -526,199 +726,18 @@ export function Products() {
               )}
             </div>
 
-            {/* Keyword Search Filter */}
-            <div className="filter-group">
-              <label>Search Styles</label>
-              <div className="auth-input-wrapper">
-                <span className="auth-input-icon">
-                  <Search size={15} />
-                </span>
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="e.g. Linen, Cotton, Dress..."
-                  className="auth-input-element"
-                  style={{ minHeight: 40, paddingLeft: 36, paddingRight: search ? 30 : 12 }}
-                />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearch('');
-                      const next = new URLSearchParams(searchParams);
-                      next.delete('search');
-                      setSearchParams(next);
-                    }}
-                    className="auth-input-action"
-                    style={{ right: 8 }}
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Dynamic Category Filter for Selected Segment */}
-            <div className="filter-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label>Category ({selectedSegment})</label>
-                <span style={{ fontSize: '0.72rem', color: 'var(--muted)', fontWeight: 600 }}>
-                  {dynamicCategories.length - 1} categories
-                </span>
-              </div>
-              <div className="tag-row">
-                {dynamicCategories.map((cat) => {
-                  const isActive = selectedCategory.toLowerCase() === cat.name.toLowerCase();
-                  return (
-                    <button
-                      key={cat.name}
-                      type="button"
-                      className={`tag ${isActive ? 'active' : ''}`}
-                      onClick={() => handleCategoryChange(cat.name)}
-                      style={{
-                        padding: '7px 14px',
-                        fontSize: '0.82rem',
-                        fontWeight: 700,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                      }}
-                    >
-                      <span>{cat.name}</span>
-                      <span
-                        style={{
-                          fontSize: '0.7rem',
-                          background: isActive ? 'var(--accent)' : 'var(--border)',
-                          color: isActive ? 'white' : 'var(--muted)',
-                          padding: '1px 6px',
-                          borderRadius: 999,
-                          fontWeight: 800,
-                        }}
-                      >
-                        {cat.count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Interactive Size Filter */}
-            <div className="filter-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label>Filter By Size</label>
-                {selectedSize && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSize(null)}
-                    style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer' }}
-                  >
-                    Clear Size
-                  </button>
-                )}
-              </div>
-              <div className="tag-row">
-                {SIZES.map((size) => {
-                  const isSelected = selectedSize === size;
-                  const count = sizeAvailability.get(size) || 0;
-                  const isDisabled = count === 0;
-
-                  return (
-                    <button
-                      key={size}
-                      type="button"
-                      className={`tag ${isSelected ? 'active' : ''}`}
-                      disabled={isDisabled}
-                      onClick={() => setSelectedSize(isSelected ? null : size)}
-                      style={{
-                        minWidth: 42,
-                        textAlign: 'center',
-                        padding: '7px 10px',
-                        fontWeight: 800,
-                        opacity: isDisabled ? 0.35 : 1,
-                        cursor: isDisabled ? 'not-allowed' : 'pointer',
-                        display: 'inline-flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                      }}
-                      title={`${count} styles available in size ${size}`}
-                    >
-                      <span>{size}</span>
-                      <span style={{ fontSize: '0.64rem', opacity: 0.75 }}>{count}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Price Range Filter */}
-            <div className="filter-group">
-              <label>Budget / Price Range</label>
-              <div className="tag-row">
-                <button
-                  type="button"
-                  className={`tag ${maxPrice === null ? 'active' : ''}`}
-                  onClick={() => setMaxPrice(null)}
-                >
-                  All Prices
-                </button>
-                <button
-                  type="button"
-                  className={`tag ${maxPrice === 3000 ? 'active' : ''}`}
-                  onClick={() => setMaxPrice(maxPrice === 3000 ? null : 3000)}
-                >
-                  Under 3K
-                </button>
-                <button
-                  type="button"
-                  className={`tag ${maxPrice === 6000 ? 'active' : ''}`}
-                  onClick={() => setMaxPrice(maxPrice === 6000 ? null : 6000)}
-                >
-                  Under 6K
-                </button>
-                <button
-                  type="button"
-                  className={`tag ${maxPrice === 10000 ? 'active' : ''}`}
-                  onClick={() => setMaxPrice(maxPrice === 10000 ? null : 10000)}
-                >
-                  Under 10K
-                </button>
-              </div>
-            </div>
-
-            {/* In Stock Only Checkbox */}
-            <div className="filter-group" style={{ marginTop: 14 }}>
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  cursor: 'pointer',
-                  fontSize: '0.88rem',
-                  fontWeight: 600,
-                  color: 'var(--primary)',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={inStockOnly}
-                  onChange={(e) => setInStockOnly(e.target.checked)}
-                  style={{ width: 18, height: 18, accentColor: 'var(--accent)', cursor: 'pointer' }}
-                />
-                <span>In Stock Only ({segmentProducts.filter((p) => p.stock > 0).length})</span>
-              </label>
-            </div>
+            {renderFilterControls()}
           </aside>
 
           {/* ── Catalog Main Grid ── */}
           <main className="catalog-panel">
-            <div className="catalog-toolbar">
+            <div className="catalog-toolbar hide-on-mobile">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '1.02rem' }}>
                   {filteredProducts.length} {filteredProducts.length === 1 ? 'Garment Style' : 'Garment Styles'} Found
                 </span>
                 <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-                  (in {selectedSegment === 'All' ? 'All Departments' : `${segmentLabel(selectedSegment)} Department`})
+                  (in {selectedSegment === 'All' ? 'All Collections' : `${segmentLabel(selectedSegment)} Collection`})
                 </span>
               </div>
 
@@ -808,7 +827,7 @@ export function Products() {
                 </button>
               </div>
             ) : (
-              <div className="product-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
+              <div className={`product-grid ${viewMode === 'one' ? 'view-single-col' : ''}`}>
                 {filteredProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
@@ -817,6 +836,61 @@ export function Products() {
           </main>
         </div>
       </div>
+
+      {/* ── Mobile Filter & Sort Drawer Modal ── */}
+      {mobileFilterOpen && (
+        <div className="mobile-filter-overlay" onClick={() => setMobileFilterOpen(false)}>
+          <div
+            className="mobile-filter-sheet"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Filter & Sort"
+          >
+            {/* Sheet Header */}
+            <div className="mobile-filter-sheet-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <SlidersHorizontal size={20} color="var(--accent)" />
+                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--primary)' }}>Filter &amp; Sort</h3>
+              </div>
+              <button
+                type="button"
+                className="icon-btn"
+                style={{ width: 36, height: 36 }}
+                onClick={() => setMobileFilterOpen(false)}
+                aria-label="Close filters"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Sheet Scrollable Body */}
+            <div className="mobile-filter-sheet-body">
+              {renderFilterControls()}
+            </div>
+
+            {/* Sheet Sticky Footer */}
+            <div className="mobile-filter-sheet-footer">
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="btn btn-secondary"
+                style={{ flex: 1, minHeight: 46 }}
+              >
+                Reset All
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileFilterOpen(false)}
+                className="btn btn-primary"
+                style={{ flex: 2, minHeight: 46 }}
+              >
+                Apply ({filteredProducts.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

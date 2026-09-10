@@ -24,7 +24,18 @@ export function TestimonialsSection() {
       try {
         const data = await reviewService.getFeaturedReviews(3);
         if (mounted && Array.isArray(data) && data.length > 0) {
-          setReviews(data);
+          const mapped: TestimonialItem[] = data.map((r) => ({
+            id: r.id,
+            name: r.userName || 'Customer',
+            location: '',
+            rating: r.rating,
+            title: r.reviewText ? r.reviewText.slice(0, 60) : 'Great product!',
+            comment: r.reviewText || '',
+            itemPurchased: '',
+            avatar: r.userInitials || r.userName?.slice(0, 1) || 'C',
+            verified: r.isVerified,
+          }));
+          setReviews(mapped);
         }
       } catch (err) {
         console.error('Failed to load featured reviews:', err);

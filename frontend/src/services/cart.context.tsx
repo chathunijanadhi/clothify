@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { useAuth } from "./auth.context";
 import * as cartService from "./cart.service";
 
@@ -42,12 +42,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   useEffect(() => {
+    let active = true;
     if (authLoading) return;
-    reload();
-  }, [authLoading, user, reload]);
+    if (!user) {
+      setCart(null);
+      return;
+    }
+    setLoading(true);
+    cartService
+      .getCart()
+      .then((data) => {
+        if (active) setCart(data);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [authLoading, user]);
 
   const cartProductIds = useMemo<Set<string>>(
-    () => new Set<string>((cart?.items ?? []).map((item: any) => item.product_id as string)),
+    () => new Set<string>((cart?.items ?? []).map((item: { product_id: string }) => item.product_id)),
     [cart],
   );
 
@@ -55,42 +72,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addToCart = useCallback(async (payload: { productId: string; variantId?: string | null; quantity?: number }) => {
     if (!user) return;
-    try {
-      const updated = await cartService.addItem(payload);
-      setCart(updated);
-    } catch (err) {
-      throw err;
-    }
+    const updated = await cartService.addItem(payload);
+    setCart(updated);
   }, [user]);
 
   const removeFromCart = useCallback(async (itemId: string) => {
     if (!user) return;
-    try {
-      const updated = await cartService.removeItem(itemId);
-      setCart(updated);
-    } catch (err) {
-      throw err;
-    }
+    const updated = await cartService.removeItem(itemId);
+    setCart(updated);
   }, [user]);
 
   const updateCartItem = useCallback(async (itemId: string, quantity: number) => {
     if (!user) return;
-    try {
-      const updated = await cartService.updateItem(itemId, quantity);
-      setCart(updated);
-    } catch (err) {
-      throw err;
-    }
+    const updated = await cartService.updateItem(itemId, quantity);
+    setCart(updated);
   }, [user]);
 
   const clearCart = useCallback(async () => {
     if (!user) return;
-    try {
-      const updated = await cartService.clearCart();
-      setCart(updated);
-    } catch (err) {
-      throw err;
-    }
+    const updated = await cartService.clearCart();
+    setCart(updated);
   }, [user]);
 
   const count = useMemo(() => (cart?.items ?? []).length, [cart]);

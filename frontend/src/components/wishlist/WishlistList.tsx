@@ -8,10 +8,16 @@ import {
   Check,
 } from 'lucide-react';
 import * as wishlistService from '../../services/wishlist.service';
+import * as cartService from '../../services/cart.service';
 import { useAuth } from '../../services/auth.context';
+import { useWishlist } from '../../services/wishlist.context';
+import { useCart } from '../../services/cart.context';
 
 export function WishlistList() {
   const { user, loading: authLoading } = useAuth();
+  const { reload: reloadGlobalWishlist } = useWishlist();
+  const { reload: reloadGlobalCart } = useCart();
+
   const [wishlist, setWishlist] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [movingId, setMovingId] = useState<string | null>(null);
@@ -21,6 +27,7 @@ export function WishlistList() {
     try {
       const data = await wishlistService.getWishlist();
       setWishlist(data);
+      reloadGlobalWishlist();
     } catch (err) {
       console.error(err);
     } finally {
@@ -29,7 +36,6 @@ export function WishlistList() {
   };
 
   useEffect(() => {
-    // Wait until auth state is resolved before fetching
     if (authLoading) return;
     if (!user) {
       setLoading(false);
@@ -41,14 +47,25 @@ export function WishlistList() {
   const handleMoveToCart = async (item: any) => {
     setMovingId(item.product_id);
     try {
-      const { addItem } = await import('../../services/cart.service');
-      await addItem({ productId: item.product_id, quantity: 1 });
+      await cartService.addItem({ productId: item.product_id, quantity: 1 });
       await wishlistService.removeItem(item.product_id);
       await load();
+      reloadGlobalCart();
+      reloadGlobalWishlist();
     } catch (err) {
       console.error(err);
     } finally {
       setMovingId(null);
+    }
+  };
+
+  const handleRemove = async (productId: string) => {
+    try {
+      await wishlistService.removeItem(productId);
+      await load();
+      reloadGlobalWishlist();
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -108,13 +125,7 @@ export function WishlistList() {
         </h2>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-          gap: 20,
-        }}
-      >
+      <div className="wishlist-grid">
         {wishlist.items.map((item: any) => {
           const price = Number(item.final_price || item.price || 0);
           const imageSrc = item.product_image || 'https://res.cloudinary.com/efjuzuge/image/upload/v1787853264/freestocks-_3Q3tsJ01nc-unsplash_1.jpg';
@@ -122,32 +133,21 @@ export function WishlistList() {
           return (
             <div
               key={item.id}
-              style={{
-                background: 'var(--panel)',
-                borderRadius: 20,
-                border: '1px solid var(--border)',
-                overflow: 'hidden',
-                boxShadow: 'var(--shadow-sm)',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
+              className="wishlist-card"
             >
               {/* Image wrap */}
-              <div style={{ position: 'relative', height: 220, background: 'var(--panel-soft)' }}>
+              <div className="wishlist-card-image-wrap">
                 <Link to={`/products/${item.product_id}`} style={{ display: 'block', height: '100%' }}>
                   <img
                     src={imageSrc}
                     alt={item.product_name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    className="wishlist-card-image"
                   />
                 </Link>
 
                 <button
                   type="button"
-                  onClick={async () => {
-                    await wishlistService.removeItem(item.product_id);
-                    await load();
-                  }}
+                  onClick={() => handleRemove(item.product_id)}
                   className="wishlist-btn active"
                   style={{ top: 12, right: 12 }}
                   title="Remove from wishlist"
@@ -203,4 +203,3 @@ export function WishlistList() {
     </div>
   );
 }
-

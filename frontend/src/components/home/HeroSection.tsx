@@ -13,8 +13,7 @@ export function HeroSection() {
   return (
     <section className="hero-section">
       <div className="container hero-grid">
-
-        {/* ── Left copy ── */}
+        {/* -- Left copy -- */}
         <div className="hero-copy animate-fade-up">
           <span className="eyebrow">
             <span className="eyebrow-dot" />
@@ -31,46 +30,50 @@ export function HeroSection() {
           </p>
 
           <div className="hero-actions">
-            <Link to="/products" className="btn btn-primary" style={{ padding: '16px 32px', fontSize: '1rem' }}>
+            <Link to="/products" className="btn btn-primary hero-btn-main">
               Explore 2026 Collection <ArrowRight size={18} />
             </Link>
-            <Link to="/products" className="btn btn-secondary" style={{ padding: '16px 26px', fontSize: '0.96rem' }}>
-              <ShoppingBag size={17} strokeWidth={2} /> Shop By Category
+            <Link to="/products" className="btn btn-secondary hero-btn-sub">
+              <ShoppingBag size={17} strokeWidth={2} /> Shop Categories
             </Link>
           </div>
 
           {/* Stats */}
           <div className="stats-row">
-            <div>
+            <div className="stat-box">
               <strong>35,000+</strong>
-              <span>Discerning Shoppers</span>
+              <span>Happy Shoppers</span>
             </div>
-            <div>
+            <div className="stat-box">
               <strong>500+</strong>
-              <span>Exclusive Designs</span>
+              <span>Curated Drops</span>
             </div>
-            <div>
+            <div className="stat-box">
               <strong>4.95 / 5★</strong>
-              <span>Over 5,200 Reviews</span>
+              <span>5,200+ Reviews</span>
             </div>
           </div>
 
-          {/* ── Trending Now chips ── */}
+          {/* -- Trending Now chips -- */}
           <div className="hero-trending">
             <div className="hero-trending-label">
               <Flame size={14} /> Trending Styles
             </div>
             <div className="hero-trending-chips">
               {trendingTags.map((tag) => (
-                <Link key={tag.label} to={tag.href} className={`hero-tag ${tag.hot ? 'hero-tag--hot' : ''}`}>
+                <Link
+                  key={tag.label}
+                  to={tag.href}
+                  className={`hero-tag ${tag.hot ? 'hero-tag--hot' : ''}`}
+                >
                   {tag.hot && <Sparkles size={12} />}
-                  {tag.label}
+                  <span>{tag.label}</span>
                 </Link>
               ))}
             </div>
           </div>
 
-          {/* ── Trust row ── */}
+          {/* -- Trust row -- */}
           <div className="hero-trust-row">
             <div className="hero-trust-item">
               <Truck size={15} />
@@ -89,7 +92,7 @@ export function HeroSection() {
           </div>
         </div>
 
-        {/* ── Right visual ── */}
+        {/* -- Right visual -- */}
         <div className="hero-visual">
           <div className="hero-image-panel">
             <img
@@ -106,10 +109,10 @@ export function HeroSection() {
             <span>Special Member Offer</span>
             <strong>Up to 35% Off</strong>
             <span className="hero-card-badge" style={{ background: 'var(--accent-3-soft)', color: 'var(--accent-3)' }}>
-              🏷️ Code: WELCOME15
+              🎟️ Code: WELCOME15
             </span>
           </div>
-          </div>
+        </div>
       </div>
     </section>
   );

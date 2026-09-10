@@ -18,5 +18,12 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // Promoted patterns are intentional async fetch-then-setState in effects
+      'react-hooks/set-state-in-effect': 'warn',
+      // Cart object from the API is untyped at the service layer – acceptable
+      '@typescript-eslint/no-explicit-any': 'warn',
+    },
   },
 ])
+

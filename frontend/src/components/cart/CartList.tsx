@@ -18,9 +18,11 @@ import * as cartService from '../../services/cart.service';
 import * as orderService from '../../services/order.service';
 import * as uploadService from '../../services/upload.service';
 import { useAuth } from '../../services/auth.context';
+import { useCart } from '../../services/cart.context';
 
 export function CartList() {
   const { user, loading: authLoading } = useAuth();
+  const { reload: reloadGlobalCart } = useCart();
   const [cart, setCart] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [promoCode, setPromoCode] = useState('');
@@ -38,6 +40,7 @@ export function CartList() {
     try {
       const data = await cartService.getCart();
       setCart(data);
+      reloadGlobalCart();
     } catch (err) {
       console.error(err);
     } finally {
@@ -213,7 +216,7 @@ export function CartList() {
   const grandTotal = Math.max(0, rawSubtotal - discountAmount);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 28 }}>
+    <div className="cart-layout-grid">
       {/* ── Left Items List ── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -286,16 +289,7 @@ export function CartList() {
           return (
             <div
               key={item.id}
-              style={{
-                background: 'var(--panel)',
-                borderRadius: 18,
-                padding: '16px 20px',
-                border: '1px solid var(--border)',
-                display: 'flex',
-                gap: 16,
-                alignItems: 'center',
-                boxShadow: 'var(--shadow-sm)',
-              }}
+              className="cart-item-card"
             >
               {/* Product Thumbnail */}
               <div
@@ -400,17 +394,7 @@ export function CartList() {
 
       {/* ── Right Summary & Checkout ── */}
       <div>
-        <div
-          style={{
-            background: 'var(--panel)',
-            borderRadius: 22,
-            padding: 24,
-            border: '1px solid var(--border)',
-            boxShadow: 'var(--shadow)',
-            position: 'sticky',
-            top: 90,
-          }}
-        >
+        <div className="cart-summary-box">
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary)', margin: '0 0 16px' }}>
             Order Summary
           </h3>

@@ -18,12 +18,12 @@ export const getProductReviews = async (productId: string): Promise<ReviewItem[]
   return res.data?.data?.reviews ?? [];
 };
 
-export const getMyReview = async (productId: string): Promise<{ review: any; hasPurchased: boolean }> => {
+export const getMyReview = async (productId: string): Promise<{ review: ReviewItem | null; hasPurchased: boolean }> => {
   const res = await api.get(`/reviews/product/${productId}/my-review`);
   return res.data?.data ?? { review: null, hasPurchased: false };
 };
 
-export const getFeaturedReviews = async (limit = 6): Promise<any[]> => {
+export const getFeaturedReviews = async (limit = 6): Promise<ReviewItem[]> => {
   const res = await api.get(`/reviews/featured?limit=${limit}`);
   return res.data?.data?.reviews ?? [];
 };

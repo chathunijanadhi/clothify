@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { useAuth } from "./auth.context";
 import * as wishlistService from "./wishlist.service";
 
@@ -28,7 +28,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const data = await wishlistService.getWishlist();
-      const ids = new Set<string>((data?.items ?? []).map((item: any) => item.product_id as string));
+      const ids = new Set<string>((data?.items ?? []).map((item: { product_id: string }) => item.product_id));
       setWishlistedIds(ids);
     } catch {
       // Non-critical
@@ -38,9 +38,28 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   useEffect(() => {
+    let active = true;
     if (authLoading) return;
-    reload();
-  }, [authLoading, user, reload]);
+    if (!user) {
+      setWishlistedIds(new Set());
+      return;
+    }
+    setLoading(true);
+    wishlistService
+      .getWishlist()
+      .then((data) => {
+        if (!active) return;
+        const ids = new Set<string>((data?.items ?? []).map((item: { product_id: string }) => item.product_id));
+        setWishlistedIds(ids);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [authLoading, user]);
 
   const isWishlisted = useCallback((productId: string) => wishlistedIds.has(productId), [wishlistedIds]);
 
