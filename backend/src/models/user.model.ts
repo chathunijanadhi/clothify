@@ -56,3 +56,33 @@ export const createUser = async (params: {
   );
   return res.rows[0];
 };
+
+/**
+ * Find an existing user by email, or create a new one for Firebase-authenticated users.
+ * Firebase users don't have a password managed by our backend.
+ */
+export const findOrCreateFirebaseUser = async (params: {
+  firebaseUid: string;
+  email: string;
+  displayName?: string | null;
+}): Promise<UserRow> => {
+  const { firebaseUid, email, displayName } = params;
+
+  // Check if the user already exists by email
+  const existing = await findByEmail(email.toLowerCase());
+  if (existing) {
+    return existing;
+  }
+
+  // Create a new user — use a crypto-random ID since Firebase UID may be long
+  const crypto = require('crypto');
+  const id = crypto.randomUUID();
+  const randomHash = crypto.randomBytes(32).toString('hex');
+
+  const res = await pool.query(
+    `INSERT INTO users (id, full_name, email, password_hash, role, is_active, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, 'customer', true, now(), now()) RETURNING *`,
+    [id, displayName || null, email.toLowerCase(), randomHash]
+  );
+  return res.rows[0];
+};

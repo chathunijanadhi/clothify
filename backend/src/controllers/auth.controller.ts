@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import * as authService from '../services/auth.service';
 import jwt from 'jsonwebtoken';
-import { toPublic } from '../models/user.model';
+import { toPublic, findOrCreateFirebaseUser } from '../models/user.model';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_me_for_development_only';
 const JWT_EXPIRES_IN = '7d';
@@ -60,5 +60,27 @@ export const me = async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error('Me error', err);
     return res.status(500).json({ success: false, message: 'Unable to retrieve profile', error: err.message || 'SERVER_ERROR' });
+  }
+};
+
+/**
+ * Exchange a Firebase login for a backend JWT.
+ * Called after signInWithGoogle, signInWithEmail, or createUserWithEmailAndPassword via Firebase.
+ * The backend finds or creates the user by email, then returns a signed JWT for API access.
+ */
+export const firebaseAuth = async (req: Request, res: Response) => {
+  try {
+    const { uid, email, displayName } = req.body ?? {};
+    if (!uid || typeof uid !== 'string') return res.status(400).json({ success: false, message: 'Firebase UID is required' });
+    if (!email || typeof email !== 'string') return res.status(400).json({ success: false, message: 'Email is required' });
+
+    const user = await findOrCreateFirebaseUser({ firebaseUid: uid, email, displayName: displayName || null });
+
+    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+    return res.json({ success: true, message: 'Firebase authentication successful', data: { user: toPublic(user), token } });
+  } catch (err: any) {
+    console.error('Firebase auth error', err);
+    return res.status(500).json({ success: false, message: 'Unable to authenticate with Firebase', error: err.message || 'SERVER_ERROR' });
   }
 };
