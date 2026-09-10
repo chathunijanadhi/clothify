@@ -17,6 +17,7 @@ const SEGMENTS = ['All', 'Men', 'Women', 'Kids'] as const;
 type SegmentType = (typeof SEGMENTS)[number];
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+const segmentLabel = (segment: SegmentType) => (segment === 'Kids' ? "Kids'" : `${segment}'s`);
 
 export function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -282,7 +283,7 @@ export function Products() {
             <>
               <span className="breadcrumb-sep">/</span>
               <span className={selectedCategory === 'All' ? 'active' : ''}>
-                {selectedSegment}'s Fashion
+                {segmentLabel(selectedSegment)} Fashion
               </span>
             </>
           )}
@@ -299,12 +300,12 @@ export function Products() {
           <div>
             <p className="eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <Sparkles size={14} />
-              {selectedSegment !== 'All' ? `${selectedSegment}'s Collection` : 'All Seasonal Collections'}
+              {selectedSegment !== 'All' ? `${segmentLabel(selectedSegment)} Collection` : 'All Seasonal Collections'}
             </p>
             <h1>
               {selectedSegment === 'All'
                 ? 'Curated Wardrobe'
-                : `${selectedSegment}'s Style Collection`}
+                : `${segmentLabel(selectedSegment)} Style Collection`}
             </h1>
           </div>
 
@@ -367,7 +368,7 @@ export function Products() {
                 }}
                 onClick={() => handleSegmentChange(seg)}
               >
-                <span>{seg === 'All' ? '🌟 All Styles' : `${seg}'s Fashion`}</span>
+                <span>{seg === 'All' ? '🌟 All Styles' : `${segmentLabel(seg)} Fashion`}</span>
                 <span
                   style={{
                     background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--panel-soft)',
@@ -717,7 +718,7 @@ export function Products() {
                   {filteredProducts.length} {filteredProducts.length === 1 ? 'Garment Style' : 'Garment Styles'} Found
                 </span>
                 <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-                  (in {selectedSegment === 'All' ? 'All Departments' : `${selectedSegment}'s Department`})
+                  (in {selectedSegment === 'All' ? 'All Departments' : `${segmentLabel(selectedSegment)} Department`})
                 </span>
               </div>
 
@@ -795,7 +796,7 @@ export function Products() {
                   No Garments Match Selected Filters
                 </h3>
                 <p style={{ color: 'var(--muted)', maxWidth: 440, margin: '0 auto 24px', lineHeight: 1.6, fontSize: '0.92rem' }}>
-                  We couldn't find any {selectedSegment !== 'All' ? `${selectedSegment}'s` : ''} pieces under "{selectedCategory}". Try clearing your filters or exploring another style category.
+                  We couldn't find any {selectedSegment !== 'All' ? segmentLabel(selectedSegment) : ''} pieces under "{selectedCategory}". Try clearing your filters or exploring another style category.
                 </p>
                 <button
                   type="button"

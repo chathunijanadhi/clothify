@@ -381,11 +381,20 @@ export function CustomerOrdersPage() {
     const normalizedPayment = String(ps || '').toLowerCase();
     const normalizedStatus = String(status || '').toLowerCase();
 
-    if (normalizedPayment === 'paid' || normalizedStatus === 'confirmed' || normalizedStatus === 'processing' || normalizedStatus === 'shipped' || normalizedStatus === 'delivered') {
+    if (normalizedStatus === 'delivered') {
+      return { background: '#dcfce7', color: '#166534', label: '🎉 Delivered' };
+    }
+    if (normalizedStatus === 'shipped') {
+      return { background: '#e0f2fe', color: '#0369a1', label: '🚚 Shipped' };
+    }
+    if (normalizedStatus === 'processing') {
+      return { background: '#fef3c7', color: '#92400e', label: '📦 Processing' };
+    }
+    if (normalizedPayment === 'paid' || normalizedStatus === 'confirmed') {
       return { background: '#dcfce7', color: '#166534', label: '✓ Payment Approved' };
     }
     if (normalizedPayment === 'failed' || normalizedPayment === 'rejected' || normalizedStatus === 'cancelled') {
-      return { background: '#fee2e2', color: '#991b1b', label: '✕ Payment Declined' };
+      return { background: '#fee2e2', color: '#991b1b', label: '✕ Cancelled' };
     }
     return { background: '#fef3c7', color: '#92400e', label: '⏳ Verification Pending' };
   };
@@ -397,23 +406,23 @@ export function CustomerOrdersPage() {
     if (status === 'cancelled' || paymentStatus === 'failed' || paymentStatus === 'rejected') {
       return { currentStep: -1, width: '0%', label: 'Order Cancelled' };
     }
-    if (status === 'pending' || paymentStatus === 'pending') {
-      return { currentStep: 1, width: '25%', label: 'Verification Pending' };
-    }
-    if (status === 'confirmed' || paymentStatus === 'paid') {
-      return { currentStep: 2, width: '50%', label: 'Payment Confirmed' };
-    }
-    if (status === 'processing') {
-      return { currentStep: 3, width: '75%', label: 'Processing' };
-    }
-    if (status === 'shipped') {
-      return { currentStep: 4, width: '100%', label: 'Shipped' };
-    }
     if (status === 'delivered') {
       return { currentStep: 5, width: '100%', label: 'Delivered' };
     }
+    if (status === 'shipped') {
+      return { currentStep: 4, width: '80%', label: 'Shipped' };
+    }
+    if (status === 'processing') {
+      return { currentStep: 3, width: '60%', label: 'Processing' };
+    }
+    if (status === 'confirmed' || (paymentStatus === 'paid' && status !== 'pending')) {
+      return { currentStep: 2, width: '40%', label: 'Payment Confirmed' };
+    }
+    if (status === 'pending' || paymentStatus === 'pending') {
+      return { currentStep: 1, width: '20%', label: 'Verification Pending' };
+    }
 
-    return { currentStep: 1, width: '25%', label: 'Verification Pending' };
+    return { currentStep: 1, width: '20%', label: 'Verification Pending' };
   };
 
   const handleOpenReview = (item: any) => {
@@ -466,9 +475,10 @@ export function CustomerOrdersPage() {
               const progress = getOrderProgress(order);
               const timelineSteps = [
                 { key: 'placed', label: 'Order Placed', completed: true },
-                { key: 'verification', label: progress.currentStep >= 2 ? 'Payment Confirmed' : 'Verification', completed: progress.currentStep >= 2 },
+                { key: 'verification', label: progress.currentStep >= 2 ? 'Confirmed' : 'Verification', completed: progress.currentStep >= 2 },
                 { key: 'processing', label: 'Processing', completed: progress.currentStep >= 3 },
-                { key: 'delivery', label: progress.currentStep >= 4 ? 'Shipped' : 'Delivered', completed: progress.currentStep >= 4 },
+                { key: 'shipped', label: 'Shipped', completed: progress.currentStep >= 4 },
+                { key: 'delivered', label: 'Delivered', completed: progress.currentStep >= 5 },
               ];
 
               const isEligibleForReview = progress.currentStep >= 2;
@@ -503,7 +513,7 @@ export function CustomerOrdersPage() {
                       return (
                         <div key={step.key} className={`order-timeline-step ${isCompleted ? 'completed' : isCurrent ? 'current' : ''}`}>
                           <div className="order-step-node">
-                            {isCompleted ? <Check size={16} /> : index === 0 ? <Check size={16} /> : index === 1 ? <Clock size={16} /> : index === 2 ? <Package size={16} /> : <Truck size={16} />}
+                            {isCompleted ? <Check size={16} /> : index === 0 ? <Check size={16} /> : index === 1 ? <Clock size={16} /> : index === 2 ? <Package size={16} /> : index === 3 ? <Truck size={16} /> : <Sparkles size={16} />}
                           </div>
                           <span className="order-step-label">{step.label}</span>
                         </div>

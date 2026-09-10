@@ -1931,10 +1931,12 @@ main { min-height: 70vh; }
   box-shadow: var(--shadow-accent);
 }
 .order-step-label {
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--muted);
   text-align: center;
+  max-width: 76px;
+  line-height: 1.2;
 }
 .order-timeline-step.completed .order-step-label,
 .order-timeline-step.current .order-step-label {

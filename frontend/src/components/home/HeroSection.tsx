@@ -1,4 +1,4 @@
-import { ArrowRight, Truck, RotateCcw, ShieldCheck, Star, Flame, Sparkles, ShoppingBag } from 'lucide-react';
+import { ArrowRight, Truck, RotateCcw, ShieldCheck, Flame, Sparkles, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const trendingTags = [
@@ -109,20 +109,8 @@ export function HeroSection() {
               🏷️ Code: WELCOME15
             </span>
           </div>
-
-          {/* Rating card */}
-          <div className="hero-card card-three animate-fade-in delay-100">
-            <div style={{ display: 'flex', gap: 3, marginBottom: 4 }}>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Star key={i} size={12} fill="#f59e0b" color="#f59e0b" />
-              ))}
-            </div>
-            <strong style={{ fontSize: '0.86rem', color: 'var(--primary)' }}>4.95 / 5.0 Rating</strong>
-            <span>Verified by 5,200+ Shoppers</span>
           </div>
-        </div>
       </div>
     </section>
   );
 }
-

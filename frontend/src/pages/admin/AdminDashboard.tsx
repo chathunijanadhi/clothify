@@ -268,6 +268,15 @@ export function AdminDashboard() {
 }
 
 /* ────────── Admin Orders ────────── */
+const FULFILLMENT_STEPS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'processing', label: 'Processing' },
+  { value: 'shipped', label: 'Shipped' },
+  { value: 'delivered', label: 'Delivered' },
+  { value: 'cancelled', label: 'Cancelled' },
+] as const;
+
 export function AdminOrdersPage() {
   const [orders, setOrders] = useState<Array<{ id: string; order_number: string; status: string; grand_total: string | number; payment_status: string; payment_method?: string; slipImage?: string | null; created_at: string; customer_name?: string; customer_email?: string }>>([]);
   const [loading, setLoading] = useState(true);
@@ -292,6 +301,8 @@ export function AdminOrdersPage() {
     try {
       await adminService.updatePaymentStatus(orderId, status);
       await load();
+    } catch (err: any) {
+      alert(err?.response?.data?.message || err?.message || 'Failed to update payment status');
     } finally {
       setProcessing(null);
     }
@@ -432,28 +443,57 @@ export function AdminOrdersPage() {
                       </span>
                     </td>
                     <td>
-                      <select
-                        value={order.status || 'pending'}
-                        disabled={processing === order.id}
-                        onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                        style={{
-                          padding: '4px 8px',
-                          borderRadius: 8,
-                          fontSize: '0.8rem',
-                          fontWeight: 700,
-                          border: '1.5px solid var(--border)',
-                          background: orderBadge.background,
-                          color: orderBadge.color,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <option value="pending">⏳ Pending</option>
-                        <option value="confirmed">✓ Confirmed</option>
-                        <option value="processing">📦 Processing</option>
-                        <option value="shipped">🚚 Shipped</option>
-                        <option value="delivered">🎉 Delivered</option>
-                        <option value="cancelled">✕ Cancelled</option>
-                      </select>
+                      <div style={{ minWidth: 168 }}>
+                        <select
+                          value={order.status || 'pending'}
+                          disabled={processing === order.id}
+                          onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 10px',
+                            borderRadius: 10,
+                            fontSize: '0.82rem',
+                            fontWeight: 700,
+                            border: '1.5px solid var(--border)',
+                            background: orderBadge.background,
+                            color: orderBadge.color,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {FULFILLMENT_STEPS.map((step) => (
+                            <option key={step.value} value={step.value}>
+                              {step.label}
+                            </option>
+                          ))}
+                        </select>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+                          {FULFILLMENT_STEPS.filter((step) => step.value !== 'cancelled' && step.value !== 'pending').map((step) => {
+                            const isActive = String(order.status || '').toLowerCase() === step.value;
+                            const canAdvance = String(order.payment_status || '').toLowerCase() === 'paid' || step.value === 'confirmed';
+                            return (
+                              <button
+                                key={step.value}
+                                type="button"
+                                disabled={processing === order.id || isActive || !canAdvance}
+                                onClick={() => handleStatusChange(order.id, step.value)}
+                                style={{
+                                  border: isActive ? '1.5px solid currentColor' : '1px solid #e0d9f0',
+                                  background: isActive ? orderBadge.background : '#fff',
+                                  color: isActive ? orderBadge.color : '#6b5a86',
+                                  borderRadius: 999,
+                                  padding: '3px 8px',
+                                  fontSize: '0.68rem',
+                                  fontWeight: 800,
+                                  cursor: processing === order.id || !canAdvance ? 'not-allowed' : 'pointer',
+                                  opacity: !canAdvance && !isActive ? 0.45 : 1,
+                                }}
+                              >
+                                {step.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </td>
                     <td>
                       {order.slipImage ? (
@@ -464,20 +504,27 @@ export function AdminOrdersPage() {
                             background: 'var(--accent-soft)',
                             border: '1px solid var(--border)',
                             borderRadius: 8,
-                            padding: '4px 10px',
+                            padding: '4px 8px',
                             color: 'var(--accent)',
                             fontWeight: 700,
                             fontSize: '0.82rem',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 4,
+                            gap: 8,
                             cursor: 'pointer',
                           }}
                         >
-                          <Eye size={13} /> View Slip
+                          <img
+                            src={order.slipImage}
+                            alt="Bank slip thumbnail"
+                            style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', border: '1px solid var(--border)' }}
+                          />
+                          <Eye size={13} /> View
                         </button>
                       ) : (
-                        <span style={s.muted}>—</span>
+                        <span style={s.muted}>
+                          {order.payment_method === 'bank_transfer' ? 'No slip' : '—'}
+                        </span>
                       )}
                     </td>
                     <td>
@@ -717,7 +764,7 @@ export function AdminPaymentsPage() {
                   <div><span style={s.label}>Date Recorded</span><span style={{ color: 'var(--muted)', fontWeight: 600 }}>{new Date(payment.created_at).toLocaleDateString()}</span></div>
                 </div>
 
-                {payment.slipImage && (
+                {payment.slipImage ? (
                   <div style={{ marginTop: 16 }}>
                     <span style={s.label}>Uploaded Deposit Slip</span>
                     <img
@@ -727,7 +774,11 @@ export function AdminPaymentsPage() {
                       onClick={() => setSelectedSlip(payment.slipImage || null)}
                     />
                   </div>
-                )}
+                ) : payment.payment_method === 'bank_transfer' ? (
+                  <div style={{ marginTop: 16, color: '#92400e', fontWeight: 700, fontSize: '0.85rem' }}>
+                    No bank slip was stored for this order.
+                  </div>
+                ) : null}
 
                 {(payment.status === 'pending' || payment.status === 'failed') && (
                   <div style={{ marginTop: 18, display: 'flex', gap: 10 }}>
