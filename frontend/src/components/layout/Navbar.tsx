@@ -42,7 +42,7 @@ export function Navbar() {
   useEffect(() => {
     let mounted = true;
     async function loadCounts() {
-      if (!user) {
+      if (!user || !localStorage.getItem('auth_token')) {
         setCartCount(0);
         setWishlistCount(0);
         return;
@@ -430,4 +430,3 @@ export function Navbar() {
     </header>
   );
 }
-

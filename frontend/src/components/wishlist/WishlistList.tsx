@@ -8,8 +8,10 @@ import {
   Check,
 } from 'lucide-react';
 import * as wishlistService from '../../services/wishlist.service';
+import { useAuth } from '../../services/auth.context';
 
 export function WishlistList() {
+  const { user, loading: authLoading } = useAuth();
   const [wishlist, setWishlist] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [movingId, setMovingId] = useState<string | null>(null);
@@ -27,8 +29,14 @@ export function WishlistList() {
   };
 
   useEffect(() => {
+    // Wait until auth state is resolved before fetching
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     load();
-  }, []);
+  }, [authLoading, user]);
 
   const handleMoveToCart = async (item: any) => {
     setMovingId(item.product_id);

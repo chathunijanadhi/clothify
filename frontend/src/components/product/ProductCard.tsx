@@ -2,8 +2,10 @@ import { Heart, ShoppingCart, Star, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import type { UIProduct } from '../../types/product.types';
+import { useAuth } from '../../services/auth.context';
 
 export function ProductCard({ product }: { product: UIProduct }) {
+  const { user } = useAuth();
   const [addedCart, setAddedCart] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [loadingCart, setLoadingCart] = useState(false);
@@ -12,6 +14,7 @@ export function ProductCard({ product }: { product: UIProduct }) {
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!user) return;
     if (loadingCart) return;
     setLoadingCart(true);
     try {
@@ -30,6 +33,7 @@ export function ProductCard({ product }: { product: UIProduct }) {
   const handleToggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!user) return;
     if (loadingWishlist) return;
     setLoadingWishlist(true);
     try {
@@ -140,4 +144,3 @@ export function ProductCard({ product }: { product: UIProduct }) {
     </article>
   );
 }
-
