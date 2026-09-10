@@ -88,7 +88,10 @@ export const findCategoryByName = async (name: string): Promise<CategoryRow | nu
 
 export const countProducts = async (filters: Record<string, unknown>): Promise<number> => {
   const { whereClause, params } = buildWhereClause(filters);
-  const query = `SELECT COUNT(*)::int AS total FROM products p ${whereClause}`.trim();
+  const query = `SELECT COUNT(*)::int AS total
+                 FROM products p
+                 INNER JOIN categories c ON c.id = p.category_id
+                 ${whereClause}`.trim();
   const res = await pool.query(query, params);
   return Number(res.rows[0]?.total ?? 0);
 };

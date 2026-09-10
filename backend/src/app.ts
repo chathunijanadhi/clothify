@@ -25,7 +25,11 @@ const allowedOrigins = new Set([
 ]);
 
 // Middleware
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  })
+);
 app.use(
   cors({
     origin: (origin, callback) => {
