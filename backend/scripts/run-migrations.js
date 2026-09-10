@@ -5,6 +5,14 @@ const { Pool } = require('pg');
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
 function getDatabaseConfig() {
+  const connectionString = process.env.HostDatabase || process.env.DATABASE_URL;
+  if (connectionString) {
+    return {
+      connectionString,
+      ssl: !/localhost|127\.0\.0\.1/i.test(connectionString),
+    };
+  }
+
   const missing = ['DB_HOST', 'DB_PORT', 'DB_USERNAME', 'DB_PASSWORD', 'DB_DATABASE']
     .filter((key) => !process.env[key]);
 
@@ -62,7 +70,8 @@ async function run() {
   try {
     const config = getDatabaseConfig();
     pool = new Pool(config);
-    await pool.connect();
+    const connection = await pool.connect();
+    connection.release();
     console.log('Connected to PostgreSQL database.');
 
     const migrationsDir = path.resolve(__dirname, '..', 'database', 'migrations');
