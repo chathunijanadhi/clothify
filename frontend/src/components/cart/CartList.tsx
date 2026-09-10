@@ -16,8 +16,11 @@ import {
 } from 'lucide-react';
 import * as cartService from '../../services/cart.service';
 import * as orderService from '../../services/order.service';
+import * as uploadService from '../../services/upload.service';
+import { useAuth } from '../../services/auth.context';
 
 export function CartList() {
+  const { user, loading: authLoading } = useAuth();
   const [cart, setCart] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [promoCode, setPromoCode] = useState('');
@@ -43,8 +46,14 @@ export function CartList() {
   };
 
   useEffect(() => {
+    // Wait until auth state is resolved before fetching
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     load();
-  }, []);
+  }, [authLoading, user]);
 
   const handleApplyPromo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,13 +71,27 @@ export function CartList() {
     setCheckingOut(true);
 
     try {
+      if (paymentMethod === 'bank_transfer' && !slipFile) {
+        setActionError('Please upload your bank deposit slip before completing checkout.');
+        setCheckingOut(false);
+        return;
+      }
+
+      let slipImage: string | null = null;
+      if (paymentMethod === 'bank_transfer' && slipFile) {
+        slipImage = await uploadService.uploadImage(slipFile);
+        if (!slipImage) {
+          throw new Error('Could not upload the bank slip. Try a smaller JPG or PNG.');
+        }
+      }
+
       const payload: {
         paymentMethod: 'card' | 'bank_transfer';
         slipImage?: string | null;
         items: Array<{ productId: string; quantity: number; variantId?: string | null; unitPrice: number }>;
       } = {
         paymentMethod,
-        slipImage: paymentMethod === 'bank_transfer' ? slipFile : null,
+        slipImage,
         items: cart.items.map((item: any) => ({
           productId: item.product_id,
           quantity: item.quantity,
@@ -452,18 +475,46 @@ export function CartList() {
                   Bank: Clothify Boutique PLC (Acc: 1092837465)
                 </p>
                 <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--accent)', cursor: 'pointer', fontWeight: 700 }}>
-                  <Upload size={14} /> Upload Deposit Slip (Optional)
+                  <Upload size={14} /> Upload Deposit Slip (JPG / PNG)
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/png,image/jpeg,image/webp,image/jpg"
                     style={{ display: 'none' }}
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) setSlipFile(URL.createObjectURL(file));
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          if (typeof reader.result === 'string') {
+                            setSlipFile(reader.result);
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }
                     }}
                   />
                 </label>
-                {slipFile && <span style={{ display: 'block', color: 'var(--accent-3)', marginTop: 4 }}>✓ Slip attached</span>}
+                {slipFile && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                    <img
+                      src={slipFile}
+                      alt="Bank Slip Preview"
+                      style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', border: '1px solid var(--border)' }}
+                    />
+                    <div>
+                      <span style={{ display: 'block', color: 'var(--accent-3)', fontWeight: 700, fontSize: '0.78rem' }}>
+                        ✓ Bank slip attached
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSlipFile(null)}
+                        style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.72rem', cursor: 'pointer', padding: 0 }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -507,7 +558,7 @@ export function CartList() {
             className="btn btn-primary"
             style={{ width: '100%', minHeight: 48, fontSize: '1rem', fontWeight: 800 }}
             onClick={handleCheckout}
-            disabled={checkingOut}
+            disabled={checkingOut || (paymentMethod === 'bank_transfer' && !slipFile)}
           >
             {checkingOut ? (
               <>
