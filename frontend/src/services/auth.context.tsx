@@ -86,41 +86,78 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const firebaseLogin = async (email: string, password: string) => {
     const firebaseUser = await firebaseAuthService.signInWithEmail(email, password);
-    localStorage.removeItem('auth_token');
-    setAuthToken(null);
-    setUser({
-      id: firebaseUser.uid,
+    // Exchange Firebase credential for a backend JWT so protected APIs (cart, wishlist) work
+    const result = await authService.firebaseAuthWithBackend({
+      uid: firebaseUser.uid,
       email: firebaseUser.email ?? email,
-      fullName: firebaseUser.displayName ?? null,
-      role: 'customer',
-      isActive: true,
+      displayName: firebaseUser.displayName ?? null,
     });
+    if (result?.token) {
+      localStorage.setItem('auth_token', result.token);
+      setAuthToken(result.token);
+      setUser(result.user as User);
+    } else {
+      // Fallback: set user from Firebase data without API access
+      localStorage.removeItem('auth_token');
+      setAuthToken(null);
+      setUser({
+        id: firebaseUser.uid,
+        email: firebaseUser.email ?? email,
+        fullName: firebaseUser.displayName ?? null,
+        role: 'customer',
+        isActive: true,
+      });
+    }
   };
 
   const firebaseRegister = async (email: string, password: string) => {
     const firebaseUser = await firebaseAuthService.signUpWithEmail(email, password);
-    localStorage.removeItem('auth_token');
-    setAuthToken(null);
-    setUser({
-      id: firebaseUser.uid,
+    // Exchange Firebase credential for a backend JWT so protected APIs (cart, wishlist) work
+    const result = await authService.firebaseAuthWithBackend({
+      uid: firebaseUser.uid,
       email: firebaseUser.email ?? email,
-      fullName: firebaseUser.displayName ?? null,
-      role: 'customer',
-      isActive: true,
+      displayName: firebaseUser.displayName ?? null,
     });
+    if (result?.token) {
+      localStorage.setItem('auth_token', result.token);
+      setAuthToken(result.token);
+      setUser(result.user as User);
+    } else {
+      localStorage.removeItem('auth_token');
+      setAuthToken(null);
+      setUser({
+        id: firebaseUser.uid,
+        email: firebaseUser.email ?? email,
+        fullName: firebaseUser.displayName ?? null,
+        role: 'customer',
+        isActive: true,
+      });
+    }
   };
 
   const firebaseLoginWithGoogle = async () => {
     const firebaseUser = await firebaseAuthService.signInWithGoogle();
-    localStorage.removeItem('auth_token');
-    setAuthToken(null);
-    setUser({
-      id: firebaseUser.uid,
+    // Exchange Firebase credential for a backend JWT so protected APIs (cart, wishlist) work
+    const result = await authService.firebaseAuthWithBackend({
+      uid: firebaseUser.uid,
       email: firebaseUser.email ?? 'google-user@example.com',
-      fullName: firebaseUser.displayName ?? null,
-      role: 'customer',
-      isActive: true,
+      displayName: firebaseUser.displayName ?? null,
     });
+    if (result?.token) {
+      localStorage.setItem('auth_token', result.token);
+      setAuthToken(result.token);
+      setUser(result.user as User);
+    } else {
+      localStorage.removeItem('auth_token');
+      setAuthToken(null);
+      setUser({
+        id: firebaseUser.uid,
+        email: firebaseUser.email ?? 'google-user@example.com',
+        fullName: firebaseUser.displayName ?? null,
+        role: 'customer',
+        isActive: true,
+      });
+    }
   };
 
   const firebaseLogout = async () => {
