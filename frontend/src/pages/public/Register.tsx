@@ -1,9 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   User as UserIcon,
   Mail,
-  Phone,
   Lock,
   Eye,
   EyeOff,
@@ -11,11 +10,9 @@ import {
   Truck,
   ShieldCheck,
   RotateCcw,
-  Gift,
+  ShoppingBag,
   Star,
   AlertCircle,
-  Check,
-  Heart,
   ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../../services/auth.context';
@@ -23,13 +20,9 @@ import { useAuth } from '../../services/auth.context';
 export function Register() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(true);
-  const [newsletterOptIn, setNewsletterOptIn] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -43,42 +36,20 @@ export function Register() {
     }
   }, [user, navigate]);
 
-  // Password strength calculation
-  const strength = useMemo(() => {
-    if (!password) return { score: 0, label: '', colorClass: '' };
-    let score = 0;
-    if (password.length >= 6) score += 1;
-    if (password.length >= 8) score += 1;
-    if (/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)) score += 1;
-    if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score += 1;
-
-    if (score <= 1) return { score: 1, label: 'Weak', colorClass: 'active-weak' };
-    if (score === 2) return { score: 2, label: 'Fair', colorClass: 'active-medium' };
-    if (score === 3) return { score: 3, label: 'Good', colorClass: 'active-medium' };
-    return { score: 4, label: 'Strong', colorClass: 'active-strong' };
-  }, [password]);
-
-  const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
-  const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword;
-
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
     if (!fullName.trim() || !email.trim() || !password) {
-      setError('Please fill in all required fields (Full Name, Email, and Password).');
+      setError('Please fill in your name, email, and password.');
       return;
     }
     if (password.length < 6) {
       setError('Password must be at least 6 characters long.');
       return;
     }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match. Please verify your password.');
-      return;
-    }
     if (!agreeTerms) {
-      setError('Please accept the Terms of Service and Privacy Policy to continue.');
+      setError('Please agree to the Terms & Privacy Policy to continue.');
       return;
     }
 
@@ -87,9 +58,8 @@ export function Register() {
       await register({
         fullName: fullName.trim(),
         email: email.trim(),
-        phone: phone.trim() || undefined,
         password,
-        confirmPassword,
+        confirmPassword: password,
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Registration failed. Please try again.';
@@ -118,8 +88,8 @@ export function Register() {
         {/* ── Left Visual Showcase Side ── */}
         <div className="auth-showcase">
           <img
-            src="https://res.cloudinary.com/efjuzuge/image/upload/v1787853264/freestocks-_3Q3tsJ01nc-unsplash_1.jpg"
-            alt="Clothify fashion showcase"
+            src="/images/hero-model.jpg"
+            alt="Clothify fashion collection"
             className="auth-showcase-bg"
           />
           <div className="auth-showcase-overlay" />
@@ -136,62 +106,70 @@ export function Register() {
               </div>
 
               <div className="auth-showcase-badge">
-                <Gift size={13} /> Welcome Offer
+                <Sparkles size={13} /> Member Access
               </div>
 
               <h1 className="auth-showcase-title">Join The Clothify Club</h1>
               <p className="auth-showcase-subtitle">
-                Unlock 15% off your first purchase, personalized fashion recommendations, and member-only drops.
+                Create an account to access curated collections, saved wishlists, and exclusive offers.
               </p>
 
               <div className="auth-perk-list">
                 <div className="auth-perk-item">
                   <div className="auth-perk-icon">
-                    <Sparkles size={17} />
-                  </div>
-                  <div className="auth-perk-text">
-                    <strong>15% OFF First Order</strong>
-                    <span>Instant coupon code upon sign-up</span>
-                  </div>
-                </div>
-
-                <div className="auth-perk-item">
-                  <div className="auth-perk-icon">
                     <Truck size={17} />
                   </div>
                   <div className="auth-perk-text">
-                    <strong>Free Express Shipping</strong>
-                    <span>Exclusive perk on member orders</span>
+                    <strong>Free Express Delivery</strong>
+                    <span>Complimentary on orders over LKR 10,000</span>
                   </div>
                 </div>
 
                 <div className="auth-perk-item">
                   <div className="auth-perk-icon">
-                    <Heart size={17} />
+                    <Sparkles size={17} />
                   </div>
                   <div className="auth-perk-text">
-                    <strong>Curated Wishlist & Trends</strong>
-                    <span>Save items and get restock notifications</span>
+                    <strong>15% Welcome Discount</strong>
+                    <span>Use code WELCOME15 at checkout</span>
+                  </div>
+                </div>
+
+                <div className="auth-perk-item">
+                  <div className="auth-perk-icon">
+                    <ShoppingBag size={17} />
+                  </div>
+                  <div className="auth-perk-text">
+                    <strong>Cross-Device Cart Sync</strong>
+                    <span>Pick up exactly where you left off</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Shopper Community Card */}
+            {/* Shopper Testimonial */}
             <div className="auth-review-card">
               <div className="auth-review-stars">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <Star key={i} size={14} fill="#fbbf24" stroke="none" />
                 ))}
               </div>
-              <p>"Clothify's member perks and seasonal fashion collections are unmatched!"</p>
-              <span>— 25,000+ Happy Shoppers Worldwide</span>
+              <p>"Creating an account was so seamless! Fast delivery and great clothing quality."</p>
+              <span>— Elena R., Verified Fashion Shopper</span>
             </div>
           </div>
         </div>
 
         {/* ── Right Form Panel ── */}
         <div className="auth-form-panel">
+          <Link to="/" className="auth-home-link" aria-label="Back to Clothify home">
+            <img
+              src="https://res.cloudinary.com/efjuzuge/image/upload/v1787922904/icon_only.png"
+              alt=""
+            />
+            Clothify
+          </Link>
+
           {/* Tabs switch */}
           <div className="auth-tabs-nav">
             <Link to="/login" className="auth-tab-btn">
@@ -203,72 +181,50 @@ export function Register() {
           </div>
 
           <div className="auth-header-copy">
-            <h2>Create Your Account</h2>
-            <p>Start your fashion journey with Clothify today</p>
+            <h2>Create Account</h2>
+            <p>Join Clothify to start your shopping journey</p>
           </div>
 
           {error && (
-            <div className="form-error" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <div className="form-error" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               <AlertCircle size={18} style={{ flexShrink: 0 }} />
               <span>{error}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit}>
-            {/* Row 1: Full Name & Phone */}
-            <div className="auth-grid-2col">
-              <div className="auth-field-group">
-                <label htmlFor="reg-name">Full Name</label>
-                <div className="auth-input-wrapper">
-                  <span className="auth-input-icon">
-                    <UserIcon size={16} />
-                  </span>
-                  <input
-                    id="reg-name"
-                    type="text"
-                    required
-                    placeholder="Jane Doe"
-                    className="auth-input-element"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    autoComplete="name"
-                  />
-                </div>
-              </div>
-
-              <div className="auth-field-group">
-                <label htmlFor="reg-phone">
-                  Phone <span style={{ fontSize: '0.72rem', color: 'var(--muted)', fontWeight: 500 }}>(Optional)</span>
-                </label>
-                <div className="auth-input-wrapper">
-                  <span className="auth-input-icon">
-                    <Phone size={16} />
-                  </span>
-                  <input
-                    id="reg-phone"
-                    type="tel"
-                    placeholder="+94 77 123 4567"
-                    className="auth-input-element"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    autoComplete="tel"
-                  />
-                </div>
+            {/* Full Name Field */}
+            <div className="auth-field-group">
+              <label htmlFor="reg-name">Full Name</label>
+              <div className="auth-input-wrapper">
+                <span className="auth-input-icon">
+                  <UserIcon size={18} />
+                </span>
+                <input
+                  id="reg-name"
+                  type="text"
+                  required
+                  placeholder="Jane Doe"
+                  className="auth-input-element"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  autoComplete="name"
+                />
               </div>
             </div>
 
-            {/* Row 2: Email Address */}
+            {/* Email Field */}
             <div className="auth-field-group">
               <label htmlFor="reg-email">Email Address</label>
               <div className="auth-input-wrapper">
                 <span className="auth-input-icon">
-                  <Mail size={16} />
+                  <Mail size={18} />
                 </span>
                 <input
                   id="reg-email"
                   type="email"
                   required
-                  placeholder="jane@example.com"
+                  placeholder="name@example.com"
                   className="auth-input-element"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -277,114 +233,45 @@ export function Register() {
               </div>
             </div>
 
-            {/* Row 3: Password & Confirm Password */}
-            <div className="auth-grid-2col">
-              <div className="auth-field-group">
-                <label htmlFor="reg-password">Password</label>
-                <div className="auth-input-wrapper">
-                  <span className="auth-input-icon">
-                    <Lock size={16} />
-                  </span>
-                  <input
-                    id="reg-password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    placeholder="Min. 6 chars"
-                    className="auth-input-element"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    className="auth-input-action"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="auth-field-group">
-                <label htmlFor="reg-confirm-password">
-                  Confirm
-                  {passwordsMatch && (
-                    <span style={{ color: '#10b981', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                      <Check size={12} /> Match
-                    </span>
-                  )}
-                  {passwordsMismatch && (
-                    <span style={{ color: '#ef4444', fontSize: '0.72rem' }}>
-                      Mismatch
-                    </span>
-                  )}
-                </label>
-                <div className="auth-input-wrapper">
-                  <span className="auth-input-icon">
-                    <Lock size={16} />
-                  </span>
-                  <input
-                    id="reg-confirm-password"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    required
-                    placeholder="Repeat pass"
-                    className="auth-input-element"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    className="auth-input-action"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
+            {/* Password Field */}
+            <div className="auth-field-group">
+              <label htmlFor="reg-password">Password</label>
+              <div className="auth-input-wrapper">
+                <span className="auth-input-icon">
+                  <Lock size={18} />
+                </span>
+                <input
+                  id="reg-password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  placeholder="•••••••• (Min. 6 chars)"
+                  className="auth-input-element"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  className="auth-input-action"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
-            {/* Password Strength Meter */}
-            {password.length > 0 && (
-              <div className="auth-strength-meter" style={{ marginBottom: 8 }}>
-                <div className="auth-strength-bars">
-                  {[1, 2, 3, 4].map((step) => (
-                    <div
-                      key={step}
-                      className={`auth-strength-bar-seg ${strength.score >= step ? strength.colorClass : ''}`}
-                    />
-                  ))}
-                </div>
-                <div className="auth-strength-text">
-                  <span>Strength: <strong>{strength.label}</strong></span>
-                  <span>{password.length >= 6 ? '✓ 6+ chars' : 'Min. 6 chars'}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Agreement & Newsletter */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, margin: '8px 0 12px' }}>
-              <label className="auth-checkbox-label" style={{ alignItems: 'center' }}>
+            {/* Terms checkbox */}
+            <div className="auth-checkbox-row">
+              <label className="auth-checkbox-label">
                 <input
                   type="checkbox"
                   checked={agreeTerms}
                   onChange={(e) => setAgreeTerms(e.target.checked)}
                 />
                 <span>
-                  I agree to Clothify's{' '}
-                  <a href="#" style={{ color: 'var(--accent)', fontWeight: 700 }}>Terms & Privacy Policy</a>
+                  I agree to Clothify's <a href="#" style={{ color: 'var(--accent)', fontWeight: 600 }}>Terms & Privacy Policy</a>
                 </span>
-              </label>
-
-              <label className="auth-checkbox-label" style={{ alignItems: 'center' }}>
-                <input
-                  type="checkbox"
-                  checked={newsletterOptIn}
-                  onChange={(e) => setNewsletterOptIn(e.target.checked)}
-                />
-                <span>Send me exclusive 15% discount alerts & VIP fashion drops</span>
               </label>
             </div>
 
@@ -392,12 +279,12 @@ export function Register() {
             <button type="submit" className="auth-primary-btn" disabled={loading || googleLoading}>
               {loading ? (
                 <>
-                  <span className="loader" style={{ width: 16, height: 16, borderWidth: 2 }} />
+                  <span className="loader" style={{ width: 18, height: 18, borderWidth: 2 }} />
                   Creating account...
                 </>
               ) : (
                 <>
-                  Create Clothify Account <ArrowRight size={16} />
+                  Create Account <ArrowRight size={18} />
                 </>
               )}
             </button>
@@ -406,7 +293,7 @@ export function Register() {
             {firebaseEnabled && (
               <>
                 <div className="auth-divider-line">
-                  <span>OR SIGN UP WITH</span>
+                  <span>OR CONTINUE WITH</span>
                 </div>
 
                 <button
@@ -417,12 +304,12 @@ export function Register() {
                 >
                   {googleLoading ? (
                     <>
-                      <span className="loader" style={{ width: 16, height: 16, borderWidth: 2 }} />
+                      <span className="loader" style={{ width: 18, height: 18, borderWidth: 2 }} />
                       Connecting with Google...
                     </>
                   ) : (
                     <>
-                      <svg width="16" height="16" viewBox="0 0 24 24">
+                      <svg width="18" height="18" viewBox="0 0 24 24">
                         <path
                           fill="#4285F4"
                           d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
@@ -440,24 +327,33 @@ export function Register() {
                           d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
                         />
                       </svg>
-                      Sign up with Google
+                      Continue with Google
                     </>
                   )}
                 </button>
               </>
             )}
+
+            {/* Guest Browsing */}
+            <button
+              type="button"
+              className="auth-guest-btn"
+              onClick={() => navigate('/products')}
+            >
+              <ShoppingBag size={16} /> Continue shopping as guest
+            </button>
           </form>
 
           {/* Trust strip */}
           <div className="auth-trust-strip">
             <div className="auth-trust-strip-item">
-              <ShieldCheck size={14} color="#00d4aa" /> 256-Bit SSL Secure
+              <ShieldCheck size={14} color="var(--accent-3)" /> SSL Secure
             </div>
             <div className="auth-trust-strip-item">
-              <Truck size={14} color="#ff6b35" /> Fast Delivery
+              <Truck size={14} color="var(--primary)" /> Fast Delivery
             </div>
             <div className="auth-trust-strip-item">
-              <RotateCcw size={14} color="#e91e8c" /> 30-Day Returns
+              <RotateCcw size={14} color="var(--accent)" /> 30-Day Returns
             </div>
           </div>
         </div>
@@ -465,3 +361,4 @@ export function Register() {
     </div>
   );
 }
+

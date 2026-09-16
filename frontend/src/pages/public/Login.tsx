@@ -87,7 +87,7 @@ export function Login() {
         {/* ── Left Visual Showcase Side ── */}
         <div className="auth-showcase">
           <img
-            src="https://res.cloudinary.com/efjuzuge/image/upload/v1787853264/freestocks-_3Q3tsJ01nc-unsplash_1.jpg"
+            src="/images/hero-model.jpg"
             alt="Clothify fashion collection"
             className="auth-showcase-bg"
           />
@@ -120,7 +120,7 @@ export function Login() {
                   </div>
                   <div className="auth-perk-text">
                     <strong>Free Express Delivery</strong>
-                    <span>Complimentary on orders over $50</span>
+                    <span>Complimentary on orders over LKR 10,000</span>
                   </div>
                 </div>
 
@@ -161,6 +161,14 @@ export function Login() {
 
         {/* ── Right Form Panel ── */}
         <div className="auth-form-panel">
+          <Link to="/" className="auth-home-link" aria-label="Back to Clothify home">
+            <img
+              src="https://res.cloudinary.com/efjuzuge/image/upload/v1787922904/icon_only.png"
+              alt=""
+            />
+            Clothify
+          </Link>
+
           {/* Tabs switch */}
           <div className="auth-tabs-nav">
             <button type="button" className="auth-tab-btn active">
@@ -172,8 +180,8 @@ export function Login() {
           </div>
 
           <div className="auth-header-copy">
-            <h2>Welcome Back</h2>
-            <p>Enter your credentials to access your Clothify account</p>
+            <h2>Welcome back</h2>
+            <p>Sign in to your account to continue shopping</p>
           </div>
 
           {error && (
@@ -264,7 +272,7 @@ export function Login() {
                 </>
               ) : (
                 <>
-                  Sign In to Clothify <ArrowRight size={18} />
+                  Sign In <ArrowRight size={18} />
                 </>
               )}
             </button>
@@ -320,20 +328,20 @@ export function Login() {
               className="auth-guest-btn"
               onClick={() => navigate('/products')}
             >
-              <ShoppingBag size={16} /> Continue as Guest Shopper
+              <ShoppingBag size={16} /> Continue shopping as guest
             </button>
           </form>
 
           {/* Trust strip */}
           <div className="auth-trust-strip">
             <div className="auth-trust-strip-item">
-              <ShieldCheck size={14} color="#00d4aa" /> 256-Bit SSL Secure
+              <ShieldCheck size={14} color="var(--accent-3)" /> SSL Secure
             </div>
             <div className="auth-trust-strip-item">
-              <Truck size={14} color="#ff6b35" /> Fast Delivery
+              <Truck size={14} color="var(--primary)" /> Fast Delivery
             </div>
             <div className="auth-trust-strip-item">
-              <RotateCcw size={14} color="#e91e8c" /> 30-Day Returns
+              <RotateCcw size={14} color="var(--accent)" /> 30-Day Returns
             </div>
           </div>
         </div>
@@ -387,7 +395,7 @@ export function Login() {
                   fontWeight: 600,
                 }}
               >
-                <CheckCircle2 size={20} color="#00d4aa" />
+                <CheckCircle2 size={20} color="var(--accent-3)" />
                 <span>Reset link sent! Please check your inbox.</span>
               </div>
             ) : (

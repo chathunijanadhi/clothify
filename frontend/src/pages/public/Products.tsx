@@ -10,16 +10,72 @@ import {
   ShoppingBag,
   Grid2X2,
   Square,
+  ChevronRight,
 } from 'lucide-react';
 import { ProductCard } from '../../components/product/ProductCard';
 import type { UIProduct, Product as BackendProduct } from '../../types/product.types';
 import * as productService from '../../services/product.service';
+import { Loader } from '../../components/common/Loader';
 
 const SEGMENTS = ['All', 'Men', 'Women', 'Kids'] as const;
 type SegmentType = (typeof SEGMENTS)[number];
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 const segmentLabel = (segment: SegmentType) => (segment === 'Kids' ? "Kids'" : `${segment}'s`);
+
+const DEPT_METADATA: Record<SegmentType, {
+  badge: string;
+  titlePrefix: string;
+  titleItalic: string;
+  titleSuffix: string;
+  subtitle: string;
+  image: string;
+  tags: string[];
+}> = {
+  All: {
+    badge: '✦ Complete Seasonal Drop',
+    titlePrefix: 'Curated',
+    titleItalic: 'Wardrobe',
+    titleSuffix: 'For Every Silhouette',
+    subtitle: 'Explore our complete drops across Men’s, Women’s, and Kids’ collections. Ethically tailored with breathable linens and soft organic cottons.',
+    image: '/images/summer-banner.jpg',
+    tags: ['✨ 100% Organic Linens', '🚚 Free Shipping over LKR 10K', '🔄 30-Day Easy Returns'],
+  },
+  Men: {
+    badge: "👔 Men's Collection",
+    titlePrefix: 'Refined',
+    titleItalic: 'Essentials',
+    titleSuffix: '& Tailored Silhouettes',
+    subtitle: 'From structured workwear shirts and crisp linen button-downs to relaxed weekend denim and everyday luxury tees.',
+    image: '/images/mens-wear.jpg',
+    tags: ['👔 Sharp Workwear', '🌿 Pure Linen Blends', '👖 Relaxed Denim'],
+  },
+  Women: {
+    badge: "👗 Women's Collection",
+    titlePrefix: 'Effortless',
+    titleItalic: 'Elegance',
+    titleSuffix: '& Contemporary Chic',
+    subtitle: 'Breezy summer dresses, fluid silhouettes, tailored trousers, delicate blouses, and day-to-night statement ensembles.',
+    image: '/images/womens-wear.jpg',
+    tags: ['👗 Fluid Dresses', '✨ Chic Evening Wear', '🌾 Breathable Silhouettes'],
+  },
+  Kids: {
+    badge: "🧸 Kids' Collection",
+    titlePrefix: 'Playful',
+    titleItalic: 'Comfort',
+    titleSuffix: '& Gentle Organic Cotton',
+    subtitle: 'Ultra-soft, pre-shrunk, tag-free everyday staples designed for endless play, daily comfort, and easy machine washing.',
+    image: '/images/kids-wear.jpg',
+    tags: ['🧸 100% Gentle Cotton', '🎨 Vibrant Colorways', '🧼 Machine Washable'],
+  },
+};
+
+const DEPT_CARDS: Array<{ key: SegmentType; label: string; icon: string; image: string }> = [
+  { key: 'All', label: 'All Garments', icon: '🌟', image: '/images/summer-banner.jpg' },
+  { key: 'Men', label: "Men's Wear", icon: '👔', image: '/images/mens-wear.jpg' },
+  { key: 'Women', label: "Women's Wear", icon: '👗', image: '/images/womens-wear.jpg' },
+  { key: 'Kids', label: "Kids' Wear", icon: '🧸', image: '/images/kids-wear.jpg' },
+];
 
 export function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -281,206 +337,145 @@ export function Products() {
   const renderFilterControls = () => (
     <>
       {/* Keyword Search */}
-      <div className="filter-group">
-        <label>Search Keyword</label>
-        <div className="auth-input-wrapper">
-          <span className="auth-input-icon">
-            <Search size={15} />
-          </span>
+      <div className="shop-filter-section">
+        <span className="shop-filter-label">Search</span>
+        <div className="shop-search-box">
+          <Search size={15} className="shop-search-icon" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="e.g. Linen, Cotton, Dress..."
-            className="auth-input-element"
-            style={{ minHeight: 40, paddingLeft: 36, paddingRight: search ? 30 : 12 }}
+            placeholder="Dress, Linen, Cotton…"
+            className="shop-search-input"
           />
           {search && (
             <button
               type="button"
+              className="shop-search-clear"
               onClick={() => {
                 setSearch('');
                 const next = new URLSearchParams(searchParams);
                 next.delete('search');
                 setSearchParams(next);
               }}
-              className="auth-input-action"
-              style={{ right: 8 }}
             >
-              <X size={14} />
+              <X size={13} />
             </button>
           )}
         </div>
       </div>
 
-      {/* Sort selection (inside mobile filter drawer) */}
-      <div className="filter-group show-in-drawer-only">
-        <label>Sort By</label>
+      <div className="shop-filter-divider" />
+
+      {/* Sort — inside mobile drawer only */}
+      <div className="shop-filter-section show-in-drawer-only">
+        <span className="shop-filter-label">Sort By</span>
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
-          className="auth-input-element"
-          style={{ paddingLeft: 14 }}
+          className="shop-sort-select"
+          style={{ width: '100%' }}
         >
-          <option value="featured">✨ Featured &amp; Trending</option>
-          <option value="low-high">Price: Low to High</option>
-          <option value="high-low">Price: High to Low</option>
-          <option value="rating">Top Customer Rated (★)</option>
-          <option value="discount">Biggest Discounts (%)</option>
+          <option value="featured">✨ Featured</option>
+          <option value="low-high">Price: Low → High</option>
+          <option value="high-low">Price: High → Low</option>
+          <option value="rating">Top Rated ★</option>
+          <option value="discount">Best Deals %</option>
         </select>
       </div>
 
       {/* Categories */}
-      <div className="filter-group">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <label>Category ({selectedSegment})</label>
-          <span style={{ fontSize: '0.74rem', color: 'var(--muted)', fontWeight: 600 }}>
-            {dynamicCategories.length - 1} options
-          </span>
-        </div>
-        <div className="tag-row">
+      <div className="shop-filter-section">
+        <span className="shop-filter-label">Category</span>
+        <div className="shop-cat-list">
           {dynamicCategories.map((cat) => {
             const isActive = selectedCategory.toLowerCase() === cat.name.toLowerCase();
             return (
               <button
                 key={cat.name}
                 type="button"
-                className={`tag ${isActive ? 'active' : ''}`}
+                className={`shop-cat-btn ${isActive ? 'active' : ''}`}
                 onClick={() => handleCategoryChange(cat.name)}
-                style={{
-                  padding: '7px 14px',
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
               >
                 <span>{cat.name}</span>
-                <span
-                  style={{
-                    fontSize: '0.7rem',
-                    background: isActive ? 'var(--accent)' : 'var(--border)',
-                    color: isActive ? 'white' : 'var(--muted)',
-                    padding: '1px 6px',
-                    borderRadius: 999,
-                    fontWeight: 800,
-                  }}
-                >
-                  {cat.count}
-                </span>
+                <span className="shop-cat-count">{cat.count}</span>
               </button>
             );
           })}
         </div>
       </div>
 
+      <div className="shop-filter-divider" />
+
       {/* Sizes */}
-      <div className="filter-group">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <label>Filter By Size</label>
+      <div className="shop-filter-section">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <span className="shop-filter-label" style={{ marginBottom: 0 }}>Size</span>
           {selectedSize && (
             <button
               type="button"
               onClick={() => setSelectedSize(null)}
-              style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer' }}
+              style={{ background: 'transparent', border: 'none', color: 'var(--primary)', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
             >
-              Clear Size
+              Clear
             </button>
           )}
         </div>
-        <div className="tag-row">
+        <div className="shop-size-grid">
           {SIZES.map((size) => {
             const isSelected = selectedSize === size;
             const count = sizeAvailability.get(size) || 0;
             const isDisabled = count === 0;
-
             return (
               <button
                 key={size}
                 type="button"
-                className={`tag ${isSelected ? 'active' : ''}`}
+                className={`shop-size-btn ${isSelected ? 'active' : ''}`}
                 disabled={isDisabled}
                 onClick={() => setSelectedSize(isSelected ? null : size)}
-                style={{
-                  minWidth: 42,
-                  textAlign: 'center',
-                  padding: '7px 10px',
-                  fontWeight: 800,
-                  opacity: isDisabled ? 0.35 : 1,
-                  cursor: isDisabled ? 'not-allowed' : 'pointer',
-                  display: 'inline-flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                }}
-                title={`${count} styles in size ${size}`}
+                title={`${count} styles in ${size}`}
               >
                 <span>{size}</span>
-                <span style={{ fontSize: '0.64rem', opacity: 0.75 }}>{count}</span>
+                <span className="shop-size-count">{count}</span>
               </button>
             );
           })}
         </div>
       </div>
 
+      <div className="shop-filter-divider" />
+
       {/* Price Range */}
-      <div className="filter-group">
-        <label>Budget / Price Range</label>
-        <div className="tag-row">
-          <button
-            type="button"
-            className={`tag ${maxPrice === null ? 'active' : ''}`}
-            onClick={() => setMaxPrice(null)}
-          >
-            All Prices
-          </button>
-          <button
-            type="button"
-            className={`tag ${maxPrice === 3000 ? 'active' : ''}`}
-            onClick={() => setMaxPrice(maxPrice === 3000 ? null : 3000)}
-          >
-            Under 3K
-          </button>
-          <button
-            type="button"
-            className={`tag ${maxPrice === 6000 ? 'active' : ''}`}
-            onClick={() => setMaxPrice(maxPrice === 6000 ? null : 6000)}
-          >
-            Under 6K
-          </button>
-          <button
-            type="button"
-            className={`tag ${maxPrice === 10000 ? 'active' : ''}`}
-            onClick={() => setMaxPrice(maxPrice === 10000 ? null : 10000)}
-          >
-            Under 10K
-          </button>
+      <div className="shop-filter-section">
+        <span className="shop-filter-label">Price Range</span>
+        <div className="shop-price-tags">
+          <button type="button" className={`shop-price-tag ${maxPrice === null ? 'active' : ''}`} onClick={() => setMaxPrice(null)}>All</button>
+          <button type="button" className={`shop-price-tag ${maxPrice === 3000 ? 'active' : ''}`} onClick={() => setMaxPrice(maxPrice === 3000 ? null : 3000)}>Under 3K</button>
+          <button type="button" className={`shop-price-tag ${maxPrice === 6000 ? 'active' : ''}`} onClick={() => setMaxPrice(maxPrice === 6000 ? null : 6000)}>Under 6K</button>
+          <button type="button" className={`shop-price-tag ${maxPrice === 10000 ? 'active' : ''}`} onClick={() => setMaxPrice(maxPrice === 10000 ? null : 10000)}>Under 10K</button>
         </div>
       </div>
 
-      {/* In Stock Only */}
-      <div className="filter-group" style={{ marginTop: 14 }}>
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            cursor: 'pointer',
-            fontSize: '0.88rem',
-            fontWeight: 600,
-            color: 'var(--primary)',
-          }}
+      <div className="shop-filter-divider" />
+
+      {/* In Stock Toggle */}
+      <div className="shop-filter-section">
+        <button
+          type="button"
+          className="shop-stock-toggle"
+          style={{ width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+          onClick={() => setInStockOnly(!inStockOnly)}
         >
-          <input
-            type="checkbox"
-            checked={inStockOnly}
-            onChange={(e) => setInStockOnly(e.target.checked)}
-            style={{ width: 18, height: 18, accentColor: 'var(--accent)', cursor: 'pointer' }}
-          />
-          <span>In Stock Only ({segmentProducts.filter((p) => p.stock > 0).length})</span>
-        </label>
+          <div className={`shop-toggle-track ${inStockOnly ? 'on' : ''}`}>
+            <div className="shop-toggle-thumb" />
+          </div>
+          <span className="shop-toggle-label">
+            In Stock Only ({segmentProducts.filter((p) => p.stock > 0).length})
+          </span>
+        </button>
       </div>
     </>
   );
+
 
   return (
     <div className="page-shell">
@@ -494,7 +489,7 @@ export function Products() {
             <>
               <span className="breadcrumb-sep">/</span>
               <span className={selectedCategory === 'All' ? 'active' : ''}>
-                {segmentLabel(selectedSegment)} Fashion
+                {segmentLabel(selectedSegment)} Collection
               </span>
             </>
           )}
@@ -506,62 +501,105 @@ export function Products() {
           )}
         </div>
 
-        {/* Page Header */}
-        <div className="page-header">
-          <div>
-            <p className="eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Sparkles size={14} />
-              {selectedSegment !== 'All' ? `${segmentLabel(selectedSegment)} Collection` : 'All Seasonal Collections'}
-            </p>
-            <h1>
-              {selectedSegment === 'All'
-                ? 'Curated Wardrobe'
-                : `${segmentLabel(selectedSegment)} Style Collection`}
-            </h1>
+        {/* ── Monic Department Hero Banner ── */}
+        {(() => {
+          const meta = DEPT_METADATA[selectedSegment] || DEPT_METADATA.All;
+          return (
+            <div className="monic-shop-hero">
+              <div className="monic-shop-hero-grid">
+                <div>
+                  <span className="monic-shop-hero-badge">
+                    <Sparkles size={13} /> {meta.badge}
+                  </span>
+                  <h1 className="monic-shop-hero-title">
+                    {meta.titlePrefix} <em>{meta.titleItalic}</em> {meta.titleSuffix}
+                  </h1>
+                  <p className="monic-shop-hero-sub">
+                    {meta.subtitle}
+                  </p>
+                  <div className="monic-shop-hero-tags">
+                    {meta.tags.map((tag, i) => (
+                      <span key={i} className="monic-shop-hero-tag">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="monic-shop-hero-preview">
+                  <img src={meta.image} alt={meta.titlePrefix} className="monic-shop-hero-img" />
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── 4-Card Department Showcase Hub (Shop All, Men, Women, Kids) ── */}
+        <div className="monic-dept-hub">
+          {DEPT_CARDS.map((dept) => {
+            const isSelected = selectedSegment === dept.key;
+            const count = dept.key === 'All'
+              ? allProducts.length
+              : allProducts.filter((p) => (p.segment || '').toLowerCase() === dept.key.toLowerCase()).length;
+
+            return (
+              <button
+                key={dept.key}
+                type="button"
+                className={`monic-dept-card ${isSelected ? 'active' : ''}`}
+                onClick={() => handleSegmentChange(dept.key)}
+              >
+                <div className="monic-dept-thumb">
+                  <img src={dept.image} alt={dept.label} />
+                </div>
+                <div className="monic-dept-info">
+                  <h3 className="monic-dept-name">{dept.label}</h3>
+                  <span className="monic-dept-count">
+                    {count} {count === 1 ? 'Garment' : 'Garments'}
+                  </span>
+                </div>
+                <div className="monic-dept-arrow">
+                  <ChevronRight size={14} />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── Quick Category Filter Bar ── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+            {dynamicCategories.map((cat) => {
+              const isActive = selectedCategory.toLowerCase() === cat.name.toLowerCase();
+              return (
+                <button
+                  key={cat.name}
+                  type="button"
+                  className={`monic-filter-pill ${isActive ? 'active' : ''}`}
+                  onClick={() => handleCategoryChange(cat.name)}
+                  style={{ margin: 0 }}
+                >
+                  {cat.name} ({cat.count})
+                </button>
+              );
+            })}
           </div>
 
-          <div className="sort-box hide-on-mobile">
-            <label htmlFor="sort" style={{ fontWeight: 700, fontSize: '0.88rem', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          <div className="sort-box hide-on-mobile" style={{ marginLeft: 'auto' }}>
+            <label htmlFor="sort" style={{ fontWeight: 700, fontSize: '0.84rem', display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--muted)' }}>
               <ArrowUpDown size={14} /> Sort:
             </label>
             <select
               id="sort"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              style={{ fontWeight: 600, padding: '9px 14px', borderRadius: 12 }}
+              className="shop-sort-select"
             >
-              <option value="featured">✨ Featured &amp; Trending</option>
-              <option value="low-high">Price: Low to High</option>
-              <option value="high-low">Price: High to Low</option>
-              <option value="rating">Top Customer Rated (★)</option>
-              <option value="discount">Biggest Discounts (%)</option>
+              <option value="featured">✨ Featured</option>
+              <option value="low-high">Price: Low → High</option>
+              <option value="high-low">Price: High → Low</option>
+              <option value="rating">Top Rated ★</option>
+              <option value="discount">Best Deals %</option>
             </select>
           </div>
-        </div>
-
-        {/* ── Segment Tabs Bar (Horizontal swipeable) ── */}
-        <div className="segment-tabs-wrap">
-          {SEGMENTS.map((seg) => {
-            const isSelected = selectedSegment === seg;
-            const count =
-              seg === 'All'
-                ? allProducts.length
-                : allProducts.filter((p) => (p.segment || '').toLowerCase() === seg.toLowerCase()).length;
-
-            return (
-              <button
-                key={seg}
-                type="button"
-                className={`tag segment-pill ${isSelected ? 'active' : ''}`}
-                onClick={() => handleSegmentChange(seg)}
-              >
-                <span>{seg === 'All' ? '🌟 All Styles' : `${segmentLabel(seg)} Fashion`}</span>
-                <span className="segment-count-badge">
-                  {count}
-                </span>
-              </button>
-            );
-          })}
         </div>
 
         {/* ── Mobile Filter Toolbar (Visible only on mobile/tablets) ── */}
@@ -598,23 +636,6 @@ export function Products() {
               <Square size={18} />
             </button>
           </div>
-        </div>
-
-        {/* ── Quick Category Chips (Mobile Horizontal Scroll) ── */}
-        <div className="mobile-category-scroll show-on-mobile">
-          {dynamicCategories.map((cat) => {
-            const isActive = selectedCategory.toLowerCase() === cat.name.toLowerCase();
-            return (
-              <button
-                key={cat.name}
-                type="button"
-                className={`mobile-cat-chip ${isActive ? 'active' : ''}`}
-                onClick={() => handleCategoryChange(cat.name)}
-              >
-                {cat.name} ({cat.count})
-              </button>
-            );
-          })}
         </div>
 
         {/* ── Active Filters Chips Bar ── */}
@@ -699,29 +720,19 @@ export function Products() {
 
         <div className="shop-layout">
           {/* ── Desktop Left Filter Sidebar ── */}
-          <aside className="filter-panel hide-on-mobile">
-            <div className="filter-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <aside className="shop-glass-sidebar hide-on-mobile" style={{ minWidth: 220, width: 240 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <SlidersHorizontal size={18} color="var(--accent)" />
-                <strong>Filter Styles</strong>
+                <SlidersHorizontal size={17} color="var(--primary)" />
+                <strong style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text)' }}>Filters</strong>
               </div>
               {hasActiveFilters && (
                 <button
                   type="button"
                   onClick={clearAllFilters}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--accent)',
-                    fontSize: '0.78rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                  }}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--primary)', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
                 >
-                  <RotateCcw size={12} /> Reset
+                  <RotateCcw size={11} /> Reset
                 </button>
               )}
             </div>
@@ -764,9 +775,8 @@ export function Products() {
 
             {/* Products Rendering */}
             {loading ? (
-              <div style={{ padding: '80px 0', textAlign: 'center' }}>
-                <div className="loader" style={{ margin: '0 auto 16px' }} />
-                <p style={{ color: 'var(--muted)', fontWeight: 600 }}>Loading curated styles…</p>
+              <div style={{ padding: '80px 0', minHeight: 360, display: 'grid', placeItems: 'center' }}>
+                <Loader size="lg" label="Curating Fashion Catalog..." />
               </div>
             ) : error ? (
               <div

@@ -24,6 +24,7 @@ import { ProductCard } from '../../components/product/ProductCard';
 import { useAuth } from '../../services/auth.context';
 import { useCart } from '../../services/cart.context';
 import { useWishlist } from '../../services/wishlist.context';
+import { Loader } from '../../components/common/Loader';
 
 export function ProductDetails() {
   const { id } = useParams();
@@ -263,9 +264,8 @@ export function ProductDetails() {
   if (loading) {
     return (
       <div className="page-shell">
-        <div className="container" style={{ padding: '80px 0', textAlign: 'center' }}>
-          <div className="loader" style={{ margin: '0 auto 16px' }} />
-          <p style={{ color: 'var(--muted)', fontWeight: 600 }}>Loading garment details...</p>
+        <div className="container" style={{ padding: '80px 0' }}>
+          <Loader size="lg" label="Loading Garment Details..." />
         </div>
       </div>
     );
@@ -476,7 +476,7 @@ export function ProductDetails() {
             <div style={{ marginTop: 16 }}>
               {availableStock > 0 ? (
                 <span style={{ color: '#065f46', fontSize: '0.86rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Check size={16} color="#00d4aa" /> In Stock ({availableStock} units available)
+                  <Check size={16} color="var(--accent-3)" /> In Stock ({availableStock} units available)
                 </span>
               ) : (
                 <span style={{ color: '#ef4444', fontSize: '0.86rem', fontWeight: 700 }}>
@@ -757,7 +757,7 @@ export function ProductDetails() {
           <span className="sticky-mobile-price">LKR {backendFinalPrice.toLocaleString()}</span>
           <span className="sticky-mobile-stock">
             {availableStock > 0 ? (
-              <span style={{ color: '#00d4aa' }}>● In Stock</span>
+              <span style={{ color: 'var(--accent-3)' }}>● In Stock</span>
             ) : (
               <span style={{ color: '#ef4444' }}>● Out of Stock</span>
             )}
