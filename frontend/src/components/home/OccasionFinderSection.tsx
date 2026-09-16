@@ -7,8 +7,8 @@ const occasions = [
     title: 'Work & Formal',
     subtitle: 'Sharp blazers, tailored trousers, and crisp shirts.',
     icon: Briefcase,
-    color: '#7c3aed',
-    bg: 'linear-gradient(135deg, rgba(124,58,237,0.1) 0%, rgba(79,70,229,0.06) 100%)',
+    color: '#A83A1F',
+    bg: 'linear-gradient(135deg, rgba(168,58,31,0.08) 0%, rgba(196,75,43,0.04) 100%)',
     link: '/products?category=Shirts',
     tag: 'Professional',
   },
@@ -17,8 +17,8 @@ const occasions = [
     title: 'Casual Weekend',
     subtitle: 'Breathable tees, relaxed denim, and everyday comfort.',
     icon: Coffee,
-    color: '#e91e8c',
-    bg: 'linear-gradient(135deg, rgba(233,30,140,0.1) 0%, rgba(255,107,53,0.06) 100%)',
+    color: '#C44B2B',
+    bg: 'linear-gradient(135deg, rgba(196,75,43,0.08) 0%, rgba(212,98,43,0.04) 100%)',
     link: '/products?category=T-Shirts',
     tag: 'Daily Wear',
   },
@@ -27,8 +27,8 @@ const occasions = [
     title: 'Evening & Party',
     subtitle: 'Statement dresses, sophisticated fits, and sleek silks.',
     icon: Wine,
-    color: '#00d4aa',
-    bg: 'linear-gradient(135deg, rgba(0,212,170,0.1) 0%, rgba(0,180,216,0.06) 100%)',
+    color: '#D4622B',
+    bg: 'linear-gradient(135deg, rgba(212,98,43,0.08) 0%, rgba(232,115,90,0.04) 100%)',
     link: '/products?category=Dresses',
     tag: 'Night Out',
   },
@@ -37,8 +37,8 @@ const occasions = [
     title: 'Resort & Summer',
     subtitle: 'Linen essentials, airy skirts, and vibrant seasonal hues.',
     icon: Sun,
-    color: '#ff6b35',
-    bg: 'linear-gradient(135deg, rgba(255,107,53,0.1) 0%, rgba(245,158,11,0.06) 100%)',
+    color: '#D4A574',
+    bg: 'linear-gradient(135deg, rgba(212,165,116,0.12) 0%, rgba(196,75,43,0.04) 100%)',
     link: '/products?category=Skirts',
     tag: 'Sunny Days',
   },
@@ -46,11 +46,13 @@ const occasions = [
 
 export function OccasionFinderSection() {
   return (
-    <section className="section-block" style={{ background: 'var(--panel)' }}>
+    <section className="section-block" style={{ background: 'transparent', padding: '56px 0' }}>
       <div className="container">
-        <div className="section-heading" style={{ textAlign: 'center' }}>
-          <p>Dressing for an event?</p>
-          <h2>Shop by <span>Occasion &amp; Mood</span></h2>
+        <div className="monic-section-top-row" style={{ marginBottom: 28 }}>
+          <div>
+            <h2 className="monic-section-title">Shop by Occasion &amp; Mood</h2>
+            <p className="monic-section-sub">Curated styling inspiration tailored for every moment</p>
+          </div>
         </div>
 
         <div
@@ -67,16 +69,18 @@ export function OccasionFinderSection() {
                 key={occ.id}
                 to={occ.link}
                 style={{
-                  background: occ.bg,
-                  border: '1.5px solid var(--border)',
+                  background: 'rgba(255, 255, 255, 0.78)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  border: '1px solid rgba(255, 255, 255, 0.7)',
                   borderRadius: 20,
-                  padding: '24px 22px',
+                  padding: '26px 22px',
                   textDecoration: 'none',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
                   transition: 'all 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
-                  boxShadow: 'var(--shadow-sm)',
+                  boxShadow: '0 6px 24px rgba(196, 75, 43, 0.06)',
                 }}
                 className="occasion-card"
               >

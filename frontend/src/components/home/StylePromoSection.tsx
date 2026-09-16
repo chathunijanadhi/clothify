@@ -8,7 +8,7 @@ const promos = [
     cta: 'Shop New In',
     href: '/products',
     image: 'https://res.cloudinary.com/efjuzuge/image/upload/v1787853829/pexels-emrekeshavarz-19607463.jpg',
-    accent: 'linear-gradient(135deg, rgba(233,30,140,0.75) 0%, rgba(255,107,53,0.65) 100%)',
+    accent: 'linear-gradient(135deg, rgba(196,75,43,0.82) 0%, rgba(232,115,90,0.72) 100%)',
     tag: '🆕 Just Dropped',
   },
   {
@@ -17,16 +17,16 @@ const promos = [
     cta: 'Shop Men',
     href: '/products?segment=Men',
     image: 'https://res.cloudinary.com/efjuzuge/image/upload/v1787853838/behrouz-sasani-6OGml3UomZw-unsplash.jpg',
-    accent: 'linear-gradient(135deg, rgba(26,10,46,0.75) 0%, rgba(45,27,105,0.65) 100%)',
+    accent: 'linear-gradient(135deg, rgba(168,58,31,0.85) 0%, rgba(139,46,20,0.75) 100%)',
     tag: '🧥 Classic Styles',
   },
   {
-    title: 'Christmas\nSale',
+    title: 'Seasonal\nSale',
     subtitle: 'Up to 40% off on selected items',
     cta: 'Grab the Deal',
     href: '/products',
     image: 'https://res.cloudinary.com/efjuzuge/image/upload/v1787853772/pexels-rakesh-mondal-3337884-19152364.jpg',
-    accent: 'linear-gradient(135deg, rgba(0,212,170,0.7) 0%, rgba(0,180,216,0.6) 100%)',
+    accent: 'linear-gradient(135deg, rgba(212,165,116,0.85) 0%, rgba(196,75,43,0.75) 100%)',
     tag: '🔥 Up to 40% Off',
   },
 ];

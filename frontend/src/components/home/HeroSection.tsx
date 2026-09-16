@@ -1,116 +1,114 @@
-import { ArrowRight, Truck, RotateCcw, ShieldCheck, Flame, Sparkles, ShoppingBag } from 'lucide-react';
+import { ArrowRight, Truck, RotateCcw, CreditCard, Headphones, Sparkles, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-const trendingTags = [
-  { label: 'Silk Dresses', href: '/products?category=Dresses', hot: true },
-  { label: 'Tailored Blazers', href: '/products?category=Shirts', hot: false },
-  { label: 'Organic Linen', href: '/products?category=T-Shirts', hot: true },
-  { label: 'Wide-Leg Denim', href: '/products?category=Jeans', hot: false },
-  { label: 'Resort Wear', href: '/products?category=Skirts', hot: true },
-];
 
 export function HeroSection() {
   return (
-    <section className="hero-section">
-      <div className="container hero-grid">
-        {/* -- Left copy -- */}
-        <div className="hero-copy animate-fade-up">
-          <span className="eyebrow">
-            <span className="eyebrow-dot" />
-            ✨ Exclusive 2026 Capsule Collection
-          </span>
+    <section className="monic-hero-section">
+      <div className="container">
+        <div className="monic-hero-grid">
+          {/* Left Text Column */}
+          <div className="animate-fade-up">
+            <span className="monic-pill-badge">
+              <Sparkles size={14} /> Your new season starts here
+            </span>
 
-          <h1>
-            Elegance In Every<br />
-            <span className="gradient-text">Silhouette</span>
-          </h1>
+            <h1 className="monic-hero-title">
+              Upgrade Your <em>Style</em> With<br />
+              New <span className="highlight-orange">Season Trends</span>
+            </h1>
 
-          <p>
-            Explore haute couture craftsmanship, sustainable organic linens, and contemporary silhouettes engineered for the modern wardrobe. Elevate your everyday style effortlessly.
-          </p>
+            <p className="monic-hero-subtitle">
+              Discover premium fashion clothing for men &amp; women. Fresh arrivals every week with exclusive discounts.
+            </p>
 
-          <div className="hero-actions">
-            <Link to="/products" className="btn btn-primary hero-btn-main">
-              Explore 2026 Collection <ArrowRight size={18} />
-            </Link>
-            <Link to="/products" className="btn btn-secondary hero-btn-sub">
-              <ShoppingBag size={17} strokeWidth={2} /> Shop Categories
-            </Link>
-          </div>
-
-          {/* Stats */}
-          <div className="stats-row">
-            <div className="stat-box">
-              <strong>35,000+</strong>
-              <span>Happy Shoppers</span>
+            <div>
+              <Link to="/products" className="monic-btn-primary">
+                Shop Now <ArrowRight size={18} />
+              </Link>
             </div>
-            <div className="stat-box">
-              <strong>500+</strong>
-              <span>Curated Drops</span>
-            </div>
-            <div className="stat-box">
-              <strong>4.95 / 5★</strong>
-              <span>5,200+ Reviews</span>
-            </div>
-          </div>
 
-          {/* -- Trending Now chips -- */}
-          <div className="hero-trending">
-            <div className="hero-trending-label">
-              <Flame size={14} /> Trending Styles
-            </div>
-            <div className="hero-trending-chips">
-              {trendingTags.map((tag) => (
-                <Link
-                  key={tag.label}
-                  to={tag.href}
-                  className={`hero-tag ${tag.hot ? 'hero-tag--hot' : ''}`}
-                >
-                  {tag.hot && <Sparkles size={12} />}
-                  <span>{tag.label}</span>
-                </Link>
-              ))}
+            {/* Customer review badge */}
+            <div className="monic-hero-reviews">
+              <div className="monic-avatar-stack">
+                <img
+                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80"
+                  alt="Customer"
+                />
+                <img
+                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80"
+                  alt="Customer"
+                />
+                <img
+                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80"
+                  alt="Customer"
+                />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} size={13} fill="#F59E0B" color="#F59E0B" />
+                  ))}
+                  <strong style={{ fontSize: '0.86rem', color: 'var(--text-primary)', marginLeft: 4 }}>4.9/5</strong>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--muted)', fontWeight: 600 }}>
+                  1,500+ Customer Reviews
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* -- Trust row -- */}
-          <div className="hero-trust-row">
-            <div className="hero-trust-item">
-              <Truck size={15} />
-              <span>Free Express Delivery</span>
-            </div>
-            <div className="hero-trust-divider" />
-            <div className="hero-trust-item">
-              <RotateCcw size={15} />
-              <span>30-Day Easy Returns</span>
-            </div>
-            <div className="hero-trust-divider" />
-            <div className="hero-trust-item">
-              <ShieldCheck size={15} />
-              <span>100% Protected Payment</span>
+          {/* Right Visual Column */}
+          <div className="monic-hero-model-wrap animate-fade-in delay-200">
+            <div className="monic-hero-slab">
+              <img
+                src="/images/hero-model.jpg"
+                alt="New Season Fashion Model"
+                className="monic-hero-model-img"
+              />
             </div>
           </div>
         </div>
 
-        {/* -- Right visual -- */}
-        <div className="hero-visual">
-          <div className="hero-image-panel">
-            <img
-              src="https://res.cloudinary.com/efjuzuge/image/upload/v1787853264/freestocks-_3Q3tsJ01nc-unsplash_1.jpg"
-              alt="Luxury Fashion Model"
-            />
+        {/* 4 Feature Trust Strip below hero */}
+        <div className="monic-trust-bar animate-fade-up delay-300">
+          <div className="monic-trust-item">
+            <div className="monic-trust-icon">
+              <RotateCcw size={20} />
+            </div>
+            <div>
+              <h4>Money Guarantee</h4>
+              <p>Within 30 days for any exchange</p>
+            </div>
           </div>
-          <div className="hero-card card-one animate-fade-in delay-300">
-            <span>Editor's Selection</span>
-            <strong>New Season Drop</strong>
-            <span className="hero-card-badge">✨ Trending Now</span>
+
+          <div className="monic-trust-item">
+            <div className="monic-trust-icon">
+              <Truck size={20} />
+            </div>
+            <div>
+              <h4>Free Shipping</h4>
+              <p>Free shipping for orders over LKR 10,000</p>
+            </div>
           </div>
-          <div className="hero-card card-two animate-fade-in delay-200">
-            <span>Special Member Offer</span>
-            <strong>Up to 35% Off</strong>
-            <span className="hero-card-badge" style={{ background: 'var(--accent-3-soft)', color: 'var(--accent-3)' }}>
-              🎟️ Code: WELCOME15
-            </span>
+
+          <div className="monic-trust-item">
+            <div className="monic-trust-icon">
+              <CreditCard size={20} />
+            </div>
+            <div>
+              <h4>Flexible Payment</h4>
+              <p>Pay with multiple credit cards</p>
+            </div>
+          </div>
+
+          <div className="monic-trust-item">
+            <div className="monic-trust-icon">
+              <Headphones size={20} />
+            </div>
+            <div>
+              <h4>Online Support</h4>
+              <p>24 hours a day, 7 days a week</p>
+            </div>
           </div>
         </div>
       </div>
