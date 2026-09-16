@@ -53,83 +53,85 @@ export function ProductCard({ product }: { product: UIProduct }) {
   };
 
   return (
-    <article className="product-card">
-      <div className="product-card__image-wrap">
-        <Link to={`/products/${product.id}`} className="product-card__image-link">
+    <article className="monic-product-card">
+      <div className="monic-product-img-box">
+        <Link to={`/products/${product.id}`} className="monic-product-img-link">
           <img
             src={product.image || 'https://res.cloudinary.com/efjuzuge/image/upload/v1787853264/freestocks-_3Q3tsJ01nc-unsplash_1.jpg'}
             alt={product.name}
-            className="product-card__image"
             loading="lazy"
           />
         </Link>
 
         {product.discount ? (
-          <span className="discount-badge">-{product.discount}%</span>
+          <span className="monic-product-badge monic-badge-yellow">-{product.discount}% OFF</span>
+        ) : product.category ? (
+          <span className="monic-product-badge monic-badge-green">{product.category}</span>
         ) : null}
 
         <button
           type="button"
-          className={`wishlist-btn ${activeInWishlist ? 'active' : ''}`}
+          className={`monic-fav-btn ${activeInWishlist ? 'active' : ''}`}
           aria-label={`Save ${product.name} to wishlist`}
           onClick={handleToggleWishlist}
           title={activeInWishlist ? 'Saved in Wishlist' : 'Add to Wishlist'}
         >
-          <Heart size={16} fill={activeInWishlist ? 'currentColor' : 'none'} />
+          <Heart size={15} fill={activeInWishlist ? 'currentColor' : 'none'} />
         </button>
       </div>
 
-      <div className="product-card__content">
-        <div className="product-card__meta">
-          <span className="product-card__category">
-            {product.category || 'Collection'}
+      <div className="monic-product-info">
+        <div className="monic-product-meta-row">
+          <span className="monic-product-dept-tag">
+            {product.segment ? `${product.segment} · ` : ''}{product.category || 'Apparel'}
           </span>
-          <span className="rating" aria-label={`Rating ${product.rating || 4.8} out of 5`}>
-            <Star size={13} fill="#f59e0b" stroke="none" />
+          <div className="monic-product-rating">
+            <Star size={12} fill="#F59E0B" stroke="none" />
             <span>{product.rating ? product.rating.toFixed(1) : '4.8'}</span>
-          </span>
+          </div>
         </div>
 
-        <Link to={`/products/${product.id}`} className="product-card__title-link">
-          <h3 className="product-card__title" title={product.name}>
-            {product.name}
-          </h3>
+        <Link to={`/products/${product.id}`} className="monic-product-name" title={product.name}>
+          {product.name}
         </Link>
 
-        <div className="product-card__price-row">
-          <span className="product-card__price">
-            LKR {product.price.toLocaleString()}
-          </span>
-          {product.oldPrice ? (
-            <span className="product-card__old-price">
-              LKR {product.oldPrice.toLocaleString()}
+        <div className="monic-product-bottom">
+          <div className="monic-product-price-wrap">
+            <span className="monic-product-price">
+              LKR {product.price.toLocaleString()}
             </span>
-          ) : null}
-        </div>
+            {product.oldPrice && product.oldPrice > product.price && (
+              <span className="monic-product-old-price">
+                LKR {product.oldPrice.toLocaleString()}
+              </span>
+            )}
+          </div>
 
-        <button
-          type="button"
-          className="add-cart-btn"
-          onClick={handleAddToCart}
-          disabled={loadingCart}
-          style={{
-            background: activeInCart ? 'var(--accent-3)' : undefined,
-          }}
-        >
-          {activeInCart ? (
-            <>
-              <Check size={16} /> In Bag
-            </>
-          ) : loadingCart ? (
-            <>
-              <span className="loader" style={{ width: 14, height: 14, borderWidth: 2 }} /> Adding...
-            </>
-          ) : (
-            <>
-              <ShoppingCart size={15} /> Add to Cart
-            </>
-          )}
-        </button>
+          <button
+            type="button"
+            className="monic-product-btn"
+            onClick={handleAddToCart}
+            disabled={loadingCart}
+            style={{
+              background: activeInCart ? '#6B8E6B' : undefined,
+              color: activeInCart ? '#ffffff' : undefined,
+            }}
+          >
+            {activeInCart ? (
+              <>
+                <Check size={13} /> In Bag
+              </>
+            ) : loadingCart ? (
+              <>
+                <span className="loader" style={{ width: 12, height: 12, borderWidth: 2 }} />
+              </>
+            ) : (
+              <>
+                <ShoppingCart size={13} /> Add
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </article>
   );

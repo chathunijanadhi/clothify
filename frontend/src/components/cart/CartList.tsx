@@ -247,23 +247,23 @@ export function CartList() {
 
         {/* Free shipping progress bar */}
         {(() => {
-          const threshold = 5000;
+          const threshold = 10000;
           const progress = Math.min(100, Math.round((rawSubtotal / threshold) * 100));
           const qualified = rawSubtotal >= threshold;
 
           return (
             <div
               style={{
-                background: qualified ? 'rgba(0,212,170,0.1)' : 'var(--panel)',
+                background: qualified ? 'rgba(107, 142, 107, 0.12)' : 'var(--panel)',
                 border: `1.5px solid ${qualified ? 'var(--accent-3)' : 'var(--border)'}`,
                 borderRadius: 14,
-                padding: '12px 16px',
+                padding: '14px 18px',
                 marginBottom: 6,
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: 700, marginBottom: 8, color: qualified ? 'var(--accent-3)' : 'var(--primary)' }}>
                 <span>
-                  {qualified ? '🎉 You unlocked FREE Express Shipping!' : `Add LKR ${(threshold - rawSubtotal).toLocaleString()} more for FREE Express Shipping`}
+                  {qualified ? '🎉 You unlocked FREE Express Delivery!' : `Add LKR ${(threshold - rawSubtotal).toLocaleString()} more for FREE Express Delivery`}
                 </span>
                 <span>{progress}%</span>
               </div>
