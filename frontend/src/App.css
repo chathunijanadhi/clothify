@@ -2,7 +2,7 @@
 
 /* Focus-visible ring using accent */
 :focus-visible {
-  outline: 2px solid rgba(233, 30, 140, 0.5);
+  outline: 2px solid rgba(196, 75, 43, 0.5);
   outline-offset: 3px;
 }
 
