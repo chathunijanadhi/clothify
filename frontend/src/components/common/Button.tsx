@@ -22,17 +22,17 @@ export function Button({ variant = 'primary', children, className = '', style, .
     cursor: 'pointer',
     transition: 'all 0.25s ease',
     ...(variant === 'primary' ? {
-      background: 'linear-gradient(135deg, #e91e8c 0%, #ff6b35 100%)',
+      background: 'var(--grad-primary)',
       color: 'white',
-      boxShadow: '0 6px 20px rgba(233, 30, 140, 0.32)',
+      boxShadow: 'var(--shadow-accent)',
     } : variant === 'secondary' ? {
-      background: '#f8f4ff',
-      color: '#4c3a8a',
-      border: '1.5px solid #e0d9f0',
+      background: 'var(--accent-soft)',
+      color: 'var(--primary)',
+      border: '1.5px solid var(--border)',
     } : {
       background: 'transparent',
-      color: '#1a0a2e',
-      border: '1.5px solid rgba(26,10,46,0.12)',
+      color: 'var(--text)',
+      border: '1.5px solid var(--border)',
     }),
     ...style,
   };

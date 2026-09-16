@@ -1,204 +1,109 @@
-import {
-  ShieldCheck,
-  Truck,
-  RotateCcw,
-  Headphones,
-  Share2,
-  Globe,
-  MessageSquare,
-  Lock,
-} from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function Footer() {
   return (
-    <footer className="site-footer">
-      <div className="container" style={{ paddingBottom: 40, borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: 40 }}>
-        {/* Top Trust Features */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: 24,
-            padding: '24px 0',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                background: 'rgba(255,255,255,0.08)',
-                display: 'grid',
-                placeItems: 'center',
-                color: 'var(--accent-3)',
-                flexShrink: 0,
-              }}
-            >
-              <Truck size={22} />
+    <footer className="monic-footer">
+      <div className="container">
+        <div className="monic-footer-grid">
+          {/* Brand Column */}
+          <div className="monic-footer-col">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 10,
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  display: 'grid',
+                  placeItems: 'center',
+                }}
+              >
+                <img
+                  src="https://res.cloudinary.com/efjuzuge/image/upload/v1787922904/icon_only.png"
+                  alt="Clothify"
+                  style={{ width: 26, height: 26, objectFit: 'contain' }}
+                />
+              </div>
+              <h3 className="monic-footer-brand-title" style={{ margin: 0 }}>Clothify</h3>
             </div>
-            <div>
-              <strong style={{ color: 'white', fontSize: '0.94rem' }}>Free Express Shipping</strong>
-              <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem' }}>On all orders over $50</div>
+
+            <p className="monic-footer-brand-desc">
+              Discover our top fashion lines, fresh arrivals, and seasonal curations tailored for the modern silhouette.
+            </p>
+
+            <div className="monic-footer-socials">
+              <a href="https://facebook.com" aria-label="Facebook" target="_blank" rel="noreferrer" className="monic-footer-social-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                </svg>
+              </a>
+              <a href="https://instagram.com" aria-label="Instagram" target="_blank" rel="noreferrer" className="monic-footer-social-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                </svg>
+              </a>
+              <a href="https://twitter.com" aria-label="Twitter" target="_blank" rel="noreferrer" className="monic-footer-social-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
+              </a>
+              <a href="https://tiktok.com" aria-label="TikTok" target="_blank" rel="noreferrer" className="monic-footer-social-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.86 4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-3.74-4.52h4.7z" />
+                </svg>
+              </a>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                background: 'rgba(255,255,255,0.08)',
-                display: 'grid',
-                placeItems: 'center',
-                color: 'var(--accent)',
-                flexShrink: 0,
-              }}
-            >
-              <RotateCcw size={22} />
-            </div>
-            <div>
-              <strong style={{ color: 'white', fontSize: '0.94rem' }}>30-Day Easy Returns</strong>
-              <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem' }}>Hassle-free return policy</div>
-            </div>
+          {/* Column 1: Services */}
+          <div className="monic-footer-col">
+            <h4>Services</h4>
+            <ul>
+              <li><Link to="/products?category=Dresses">Category Drops</Link></li>
+              <li><Link to="/products?segment=Men">Mens Collection</Link></li>
+              <li><Link to="/products?segment=Women">Popular Styles</Link></li>
+              <li><Link to="/products">All Garments</Link></li>
+            </ul>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                background: 'rgba(255,255,255,0.08)',
-                display: 'grid',
-                placeItems: 'center',
-                color: 'var(--accent-2)',
-                flexShrink: 0,
-              }}
-            >
-              <ShieldCheck size={22} />
-            </div>
-            <div>
-              <strong style={{ color: 'white', fontSize: '0.94rem' }}>100% Secure Checkout</strong>
-              <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem' }}>256-Bit SSL Encryption</div>
-            </div>
+          {/* Column 2: About */}
+          <div className="monic-footer-col">
+            <h4>About</h4>
+            <ul>
+              <li><Link to="/products">Popular Trends</Link></li>
+              <li><Link to="/">Shopper Reviews</Link></li>
+              <li><Link to="/products">Choose Style</Link></li>
+              <li><Link to="/">Happy Clients</Link></li>
+            </ul>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                background: 'rgba(255,255,255,0.08)',
-                display: 'grid',
-                placeItems: 'center',
-                color: '#fbbf24',
-                flexShrink: 0,
-              }}
-            >
-              <Headphones size={22} />
-            </div>
-            <div>
-              <strong style={{ color: 'white', fontSize: '0.94rem' }}>Dedicated Support</strong>
-              <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem' }}>24/7 Customer Care assistance</div>
-            </div>
+          {/* Column 3: Legal Matters */}
+          <div className="monic-footer-col">
+            <h4>Legal Matters</h4>
+            <ul>
+              <li><a href="#">Terms of Use</a></li>
+              <li><a href="#">Conditions</a></li>
+              <li><a href="#">Policy &amp; Brand</a></li>
+              <li><a href="#">Privacy Policy</a></li>
+            </ul>
           </div>
-        </div>
-      </div>
 
-      <div className="container footer-grid">
-        {/* Brand & Mission */}
-        <div>
-          <div className="footer-brand-badge">
-            <img
-              src="https://res.cloudinary.com/efjuzuge/image/upload/v1787922904/icon_only.png"
-              alt="Clothify logo"
-            />
-          </div>
-          <h3 style={{ marginTop: 0, fontSize: '1.4rem' }}>Clothify</h3>
-          <p style={{ lineHeight: 1.7, fontSize: '0.9rem' }}>
-            Elevating everyday wardrobes with curated seasonal collections, timeless essentials, and premium craftsmanship.
-          </p>
-          <div className="social-row">
-            <a href="https://instagram.com" aria-label="Instagram" target="_blank" rel="noreferrer">
-              <Share2 size={17} />
-            </a>
-            <a href="https://facebook.com" aria-label="Facebook" target="_blank" rel="noreferrer">
-              <Globe size={17} />
-            </a>
-            <a href="https://twitter.com" aria-label="Twitter" target="_blank" rel="noreferrer">
-              <MessageSquare size={17} />
-            </a>
+          {/* Column 4: Contact */}
+          <div className="monic-footer-col">
+            <h4>Contact</h4>
+            <ul>
+              <li><a href="#">Our Location</a></li>
+              <li><a href="#">Social Media</a></li>
+              <li><a href="mailto:support@clothify.com">support@clothify.com</a></li>
+              <li><a href="tel:+1234567890">+1 (800) 246-810</a></li>
+            </ul>
           </div>
         </div>
 
-        {/* Categories */}
-        <div>
-          <h4>Shop Collections</h4>
-          <ul>
-            <li><Link to="/products?segment=Women">Women's Fashion</Link></li>
-            <li><Link to="/products?segment=Men">Men's Wardrobe</Link></li>
-            <li><Link to="/products?segment=Kids">Kids' Collection</Link></li>
-            <li><Link to="/products?category=Dresses">Trending Dresses</Link></li>
-            <li><Link to="/products?category=Shirts">Premium Shirts</Link></li>
-            <li><Link to="/products">New Season Arrivals</Link></li>
-          </ul>
-        </div>
-
-        {/* Customer Care */}
-        <div>
-          <h4>Customer Care</h4>
-          <ul>
-            <li><Link to="/customer/orders">Track My Order</Link></li>
-            <li><Link to="/customer/wishlist">Saved Wishlist</Link></li>
-            <li><Link to="/customer/cart">Shopping Bag</Link></li>
-            <li><Link to="/customer/profile">My Account</Link></li>
-            <li><a href="#">Shipping &amp; Delivery</a></li>
-            <li><a href="#">Returns &amp; Exchanges</a></li>
-          </ul>
-        </div>
-
-        {/* Security & Company */}
-        <div>
-          <h4>About &amp; Security</h4>
-          <ul>
-            <li><a href="#">About Clothify</a></li>
-            <li><a href="#">Privacy Policy</a></li>
-            <li><a href="#">Terms &amp; Conditions</a></li>
-            <li><a href="#">Careers at Clothify</a></li>
-          </ul>
-
-          <div style={{ marginTop: 22 }}>
-            <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Lock size={14} color="var(--accent-3)" /> Accepted Payment Methods
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ padding: '4px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.08)', fontSize: '0.75rem', fontWeight: 700, color: 'white' }}>
-                VISA
-              </span>
-              <span style={{ padding: '4px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.08)', fontSize: '0.75rem', fontWeight: 700, color: 'white' }}>
-                Mastercard
-              </span>
-              <span style={{ padding: '4px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.08)', fontSize: '0.75rem', fontWeight: 700, color: 'white' }}>
-                AMEX
-              </span>
-              <span style={{ padding: '4px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.08)', fontSize: '0.75rem', fontWeight: 700, color: 'white' }}>
-                Bank Transfer
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="footer-bottom">
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <span>© 2026 Clothify Boutique. All rights reserved.</span>
-          <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)' }}>
-            Designed with ♥ for modern fashion lovers.
-          </span>
+        {/* Footer Bottom Bar */}
+        <div className="monic-footer-bottom">
+          <span>Our Policy and Brand is reserved here.</span>
+          <span>© 2026 Clothify Fashion Boutique. All rights reserved.</span>
         </div>
       </div>
     </footer>

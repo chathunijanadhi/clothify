@@ -23,6 +23,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [scrolled, setScrolled] = useState(false);
 
   const { user, logout } = useAuth();
   const { count: cartCount } = useCart();
@@ -30,6 +31,13 @@ export function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -95,7 +103,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="site-header">
+      <header className={`site-header ${scrolled ? 'is-scrolled' : ''}`}>
         <div className="container nav-shell">
           {/* Brand */}
           <Link to="/" className="brand" aria-label="Clothify Home">
@@ -105,21 +113,17 @@ export function Navbar() {
                 alt="Clothify logo"
               />
             </div>
-            <span>Clothify</span>
+            <div className="brand-info">
+              <span className="brand-title">Cloth<span>ify</span></span>
+              <span className="brand-subtitle">Colombo &bull; Est. 2026</span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="desktop-nav" aria-label="Main navigation">
             <button
               type="button"
-              className={`nav-link ${isActiveNav('/') ? 'active' : ''}`}
-              onClick={() => navigate('/')}
-            >
-              Home
-            </button>
-            <button
-              type="button"
-              className={`nav-link ${location.pathname === '/products' && !location.search ? 'active' : ''}`}
+              className={`nav-link ${location.pathname === '/products' && !location.search.includes('segment=') ? 'active' : ''}`}
               onClick={() => navigateToShop()}
             >
               Shop All
@@ -157,6 +161,16 @@ export function Navbar() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            {searchQuery && (
+              <button
+                type="button"
+                className="nav-search-clear"
+                onClick={() => setSearchQuery('')}
+                title="Clear search"
+              >
+                <X size={14} />
+              </button>
+            )}
           </form>
 
           {/* Action Icons & User Dropdown */}
@@ -191,31 +205,33 @@ export function Navbar() {
                   style={{
                     width: 'auto',
                     borderRadius: 999,
-                    padding: '4px 12px 4px 6px',
+                    padding: '4px 14px 4px 6px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
-                    background: 'var(--panel)',
+                    background: '#FFFFFF',
+                    border: '1.5px solid rgba(196, 75, 43, 0.18)',
                   }}
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                   aria-label="User menu"
                 >
                   <div
                     style={{
-                      width: 28,
-                      height: 28,
+                      width: 30,
+                      height: 30,
                       borderRadius: '50%',
                       background: 'var(--grad-accent)',
                       color: 'white',
                       fontWeight: 800,
-                      fontSize: '0.74rem',
+                      fontSize: '0.76rem',
                       display: 'grid',
                       placeItems: 'center',
+                      boxShadow: '0 2px 8px rgba(196, 75, 43, 0.3)',
                     }}
                   >
                     {initials}
                   </div>
-                  <span className="user-menu-name" style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--primary)' }}>
+                  <span className="user-menu-name" style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                     {user.fullName ? user.fullName.split(' ')[0] : 'Account'}
                   </span>
                   <ChevronDown size={14} color="var(--muted)" />
@@ -227,6 +243,9 @@ export function Navbar() {
                     <div className="user-dropdown-header">
                       <div className="user-dropdown-name">{user.fullName || 'Valued Member'}</div>
                       <div className="user-dropdown-email">{user.email}</div>
+                      <span className={`user-dropdown-role-badge ${user.role === 'admin' ? 'admin' : 'vip'}`}>
+                        {user.role === 'admin' ? '⚡ Administrator' : '★ VIP Member'}
+                      </span>
                     </div>
 
                     {user.role === 'admin' ? (
@@ -239,18 +258,25 @@ export function Navbar() {
                           <LayoutDashboard size={16} /> Admin Dashboard
                         </Link>
                         <Link
-                          to="/admin/catalog"
-                          className="dropdown-link"
-                          onClick={() => setUserDropdownOpen(false)}
-                        >
-                          <ShoppingBag size={16} /> Catalog Manager
-                        </Link>
-                        <Link
                           to="/admin/orders"
                           className="dropdown-link"
                           onClick={() => setUserDropdownOpen(false)}
                         >
-                          <Package size={16} /> Manage Orders
+                          <Package size={16} /> Orders &amp; Fulfillment
+                        </Link>
+                        <Link
+                          to="/admin/catalog"
+                          className="dropdown-link"
+                          onClick={() => setUserDropdownOpen(false)}
+                        >
+                          <ShoppingBag size={16} /> Catalog &amp; Inventory
+                        </Link>
+                        <Link
+                          to="/admin/customers"
+                          className="dropdown-link"
+                          onClick={() => setUserDropdownOpen(false)}
+                        >
+                          <Compass size={16} /> Customer Directory
                         </Link>
                       </>
                     ) : (
@@ -260,33 +286,33 @@ export function Navbar() {
                           className="dropdown-link"
                           onClick={() => setUserDropdownOpen(false)}
                         >
-                          <LayoutDashboard size={16} /> My Dashboard
+                          <LayoutDashboard size={16} /> Member Hub
                         </Link>
                         <Link
                           to="/customer/orders"
                           className="dropdown-link"
                           onClick={() => setUserDropdownOpen(false)}
                         >
-                          <Package size={16} /> My Orders
+                          <Package size={16} /> Order Tracking
                         </Link>
                         <Link
                           to="/customer/wishlist"
                           className="dropdown-link"
                           onClick={() => setUserDropdownOpen(false)}
                         >
-                          <Heart size={16} /> My Wishlist
+                          <Heart size={16} /> Saved Pieces
                         </Link>
                         <Link
                           to="/customer/profile"
                           className="dropdown-link"
                           onClick={() => setUserDropdownOpen(false)}
                         >
-                          <UserIcon size={16} /> Profile Settings
+                          <UserIcon size={16} /> Contact &amp; Address
                         </Link>
                       </>
                     )}
 
-                    <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+                    <div style={{ height: 1, background: 'rgba(196, 75, 43, 0.1)', margin: '4px 0' }} />
 
                     <button
                       type="button"
@@ -303,9 +329,18 @@ export function Navbar() {
                 )}
               </div>
             ) : (
-              <Link to="/login" className="login-btn">
-                <UserIcon size={15} /> Sign In
-              </Link>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Link to="/login" className="nav-signin-btn">
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
+                  className="monic-btn-primary"
+                  style={{ padding: '8px 20px', fontSize: '0.86rem' }}
+                >
+                  Sign Up
+                </Link>
+              </div>
             )}
 
             {/* Mobile Menu Button */}
@@ -314,7 +349,7 @@ export function Navbar() {
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
               onClick={() => setMobileOpen(!mobileOpen)}
             >
-              {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </div>
@@ -339,7 +374,10 @@ export function Navbar() {
                     alt="Clothify"
                   />
                 </div>
-                <span>Clothify</span>
+                <div className="brand-info">
+                  <span className="brand-title">Cloth<span>ify</span></span>
+                  <span className="brand-subtitle">Colombo &bull; Est. 2026</span>
+                </div>
               </Link>
               <button
                 type="button"
@@ -395,12 +433,12 @@ export function Navbar() {
 
               <button
                 type="button"
-                className={`mobile-drawer-item ${location.pathname === '/products' && !location.search ? 'active' : ''}`}
+                className={`mobile-drawer-item ${location.pathname === '/products' && !location.search.includes('segment=') ? 'active' : ''}`}
                 onClick={() => navigateToShop()}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <Compass size={18} />
-                  <span>Shop All Garments</span>
+                  <span>Shop All</span>
                 </div>
                 <ChevronRight size={16} className="drawer-arrow" />
               </button>
@@ -410,8 +448,8 @@ export function Navbar() {
                 className={`mobile-drawer-item ${location.search.includes('segment=Men') ? 'active' : ''}`}
                 onClick={() => navigateToShop('Men')}
               >
-                <span>Men's Fashion</span>
-                <span className="drawer-badge">Collection</span>
+                <span>Men</span>
+                <ChevronRight size={16} className="drawer-arrow" />
               </button>
 
               <button
@@ -419,8 +457,8 @@ export function Navbar() {
                 className={`mobile-drawer-item ${location.search.includes('segment=Women') ? 'active' : ''}`}
                 onClick={() => navigateToShop('Women')}
               >
-                <span>Women's Fashion</span>
-                <span className="drawer-badge" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>Trending</span>
+                <span>Women</span>
+                <ChevronRight size={16} className="drawer-arrow" />
               </button>
 
               <button
@@ -428,8 +466,8 @@ export function Navbar() {
                 className={`mobile-drawer-item ${location.search.includes('segment=Kids') ? 'active' : ''}`}
                 onClick={() => navigateToShop('Kids')}
               >
-                <span>Kids' Fashion</span>
-                <span className="drawer-badge" style={{ background: 'var(--accent-3-soft)', color: 'var(--accent-3)' }}>New</span>
+                <span>Kids</span>
+                <ChevronRight size={16} className="drawer-arrow" />
               </button>
 
               <div className="mobile-drawer-divider" />
@@ -495,7 +533,7 @@ export function Navbar() {
                       navigate('/login');
                     }}
                   >
-                    <UserIcon size={16} /> Sign In / Register
+                    <UserIcon size={16} /> Sign In
                   </button>
                 </div>
               )}
