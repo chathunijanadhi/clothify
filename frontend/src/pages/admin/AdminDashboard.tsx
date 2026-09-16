@@ -1,9 +1,9 @@
 import {
-  ArrowRight, PackageCheck, ShoppingBag, Trash2, Users,
-  CreditCard, LayoutDashboard, Package, ChevronRight, Search,
-  Eye, ExternalLink, Plus, LogOut,
+  LayoutDashboard, Package, CreditCard, Users, ShoppingBag,
+  TrendingUp, Plus, Search, Trash2, Eye, ExternalLink, LogOut,
+  ChevronRight, Sparkles, X, FileText, MessageSquare, Star, CheckCircle2,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../services/auth.context';
 import * as adminService from '../../services/admin.service';
@@ -13,160 +13,141 @@ import type { Category, Product } from '../../types/product.types';
 
 /* ────────── nav config ────────── */
 const navItems = [
-  { to: '/admin/dashboard', label: 'Overview',   icon: LayoutDashboard },
-  { to: '/admin/orders',    label: 'Orders',     icon: Package },
-  { to: '/admin/payments',  label: 'Payments',   icon: CreditCard },
-  { to: '/admin/customers', label: 'Customers',  icon: Users },
-  { to: '/admin/catalog',   label: 'Catalog',    icon: ShoppingBag },
+  { to: '/admin/dashboard', label: 'Overview',      icon: LayoutDashboard },
+  { to: '/admin/orders',    label: 'Orders & Tracking', icon: Package },
+  { to: '/admin/payments',  label: 'Payments',      icon: CreditCard },
+  { to: '/admin/customers', label: 'Customers',     icon: Users },
+  { to: '/admin/catalog',   label: 'Catalog & Stock', icon: ShoppingBag },
+  { to: '/admin/reviews',   label: 'Reviews & Feedback', icon: MessageSquare },
 ];
 
-/* ────────── shell ────────── */
-function AdminShell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
+/* ────────── Admin Sidebar ────────── */
+function AdminSidebar() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
-  return (
-    <div className="dashboard-shell">
-      <div className="dashboard-container">
+  const initials = user?.fullName
+    ? user.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+    : user?.email?.slice(0, 2).toUpperCase() ?? 'AD';
 
-        {/* ── Mobile Horizontal Navigation Tabs ── */}
-        <div className="dashboard-mobile-tabs show-on-mobile">
-          <div className="dashboard-mobile-tabs-scroll">
-            {navItems.map(({ to, label, icon: Icon }) => {
-              const isActive = to === '/admin/dashboard'
-                ? location.pathname === to
-                : location.pathname.startsWith(to);
-              return (
-                <NavLink
-                  key={to}
-                  end={to === '/admin/dashboard'}
-                  to={to}
-                  className={`dashboard-mobile-tab-btn ${isActive ? 'active' : ''}`}
-                >
-                  <Icon size={15} />
-                  <span>{label}</span>
-                </NavLink>
-              );
-            })}
+  return (
+    <>
+      {/* ── Mobile Horizontal Navigation Tabs ── */}
+      <div className="dashboard-mobile-tabs show-on-mobile">
+        <div className="dashboard-mobile-tabs-scroll">
+          {navItems.map(({ to, label, icon: Icon }) => {
+            const isActive = to === '/admin/dashboard'
+              ? location.pathname === to
+              : location.pathname.startsWith(to);
+            return (
+              <NavLink
+                key={to}
+                end={to === '/admin/dashboard'}
+                to={to}
+                className={`dashboard-mobile-tab-btn ${isActive ? 'active' : ''}`}
+              >
+                <Icon size={14} />
+                <span>{label}</span>
+              </NavLink>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Desktop Sticky Glass Sidebar ── */}
+      <aside className="monic-dash-sidebar hide-on-mobile">
+        {/* Brand Banner */}
+        <div className="monic-dash-side-brand">
+          <div className="monic-dash-brand-icon">
+            <Sparkles size={18} color="#C44B2B" />
+          </div>
+          <div>
+            <span className="monic-dash-side-tag">Executive Suite</span>
+            <strong className="monic-dash-side-title">Monic Studio Admin</strong>
           </div>
         </div>
 
-        {/* ── Desktop Sidebar ── */}
-        <aside className="dashboard-sidebar hide-on-mobile" style={{ background: 'linear-gradient(180deg, #1a0a2e 0%, #2d1b69 60%, #3d2480 100%)' }}>
-          <div style={s.brandWrap}>
-            <div style={s.brandBadge}>
-              <img
-                src="https://res.cloudinary.com/efjuzuge/image/upload/v1787922904/icon_only.png"
-                alt="Clothify"
-                style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 6 }}
-              />
+        {/* User Card */}
+        <div className="monic-dash-user-card">
+          <div className="monic-dash-avatar" style={{ background: 'linear-gradient(135deg, #8B2E14 0%, #C44B2B 100%)' }}>
+            {initials}
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div className="monic-dash-user-name">
+              {user?.fullName || 'Administrator'}
             </div>
-            <div>
-              <p style={s.sideLabel}>Management Suite</p>
-              <strong style={s.sideTitle}>Clothify Admin</strong>
+            <div className="monic-dash-user-email">
+              {user?.email}
+            </div>
+            <div style={{ marginTop: 6 }}>
+              <span className="monic-dash-vip-pill" style={{ background: '#dcfce7', color: '#166534' }}>
+                ● Full Admin Access
+              </span>
             </div>
           </div>
+        </div>
 
-          {/* User quick card */}
-          <div
-            style={{
-              padding: '12px 14px',
-              borderRadius: 14,
-              background: 'rgba(255,255,255,0.06)',
-              marginBottom: 18,
-              border: '1px solid rgba(255,255,255,0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-            }}
+        {/* Nav List */}
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+          {navItems.map(({ to, label, icon: Icon }) => {
+            const isActive = to === '/admin/dashboard'
+              ? location.pathname === to
+              : location.pathname.startsWith(to);
+            return (
+              <NavLink key={to} end={to === '/admin/dashboard'} to={to} style={{ textDecoration: 'none' }}>
+                <div className={`monic-dash-nav-btn ${isActive ? 'active' : ''}`}>
+                  <Icon size={16} style={{ flexShrink: 0 }} />
+                  <span>{label}</span>
+                  {isActive && <ChevronRight size={14} style={{ marginLeft: 'auto', opacity: 0.8 }} />}
+                </div>
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {/* Footer Actions */}
+        <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(44, 24, 16, 0.08)', display: 'grid', gap: 8 }}>
+          <Link
+            to="/products"
+            className="btn btn-secondary"
+            style={{ fontSize: '0.82rem', padding: '9px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
           >
-            <div
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: '50%',
-                background: 'var(--grad-accent)',
-                color: 'white',
-                fontWeight: 800,
-                fontSize: '0.8rem',
-                display: 'grid',
-                placeItems: 'center',
-                flexShrink: 0,
-              }}
-            >
-              {(user?.fullName || user?.email || 'A').slice(0, 2).toUpperCase()}
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ color: 'white', fontWeight: 700, fontSize: '0.86rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {user?.fullName || 'Administrator'}
-              </div>
-              <div style={{ color: 'var(--accent-3)', fontSize: '0.72rem', fontWeight: 700 }}>
-                ● Full Access
-              </div>
-            </div>
-          </div>
+            <ExternalLink size={14} /> View Storefront
+          </Link>
 
-          <nav style={s.navList}>
-            {navItems.map(({ to, label, icon: Icon }) => {
-              const isActive = to === '/admin/dashboard'
-                ? location.pathname === to
-                : location.pathname.startsWith(to);
-              return (
-                <NavLink
-                  key={to}
-                  end={to === '/admin/dashboard'}
-                  to={to}
-                  style={{ textDecoration: 'none' }}
-                >
-                  <div style={{ ...s.navItem, ...(isActive ? s.navItemActive : {}) }}>
-                    <Icon size={17} style={{ flexShrink: 0 }} />
-                    <span>{label}</span>
-                    {isActive && <ChevronRight size={14} style={{ marginLeft: 'auto' }} />}
-                  </div>
-                </NavLink>
-              );
-            })}
-          </nav>
+          <button
+            type="button"
+            onClick={() => {
+              logout();
+              navigate('/login');
+            }}
+            className="monic-dash-logout"
+          >
+            <LogOut size={15} /> Sign Out
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+}
 
-          <div style={s.sideFooter}>
-            <Link to="/products" style={s.visitStoreBtn}>
-              <ShoppingBag size={15} /> Storefront View
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                logout();
-                navigate('/login');
-              }}
-              style={{
-                ...s.visitStoreBtn,
-                marginTop: 8,
-                background: 'rgba(239,68,68,0.12)',
-                borderColor: 'rgba(239,68,68,0.25)',
-                color: '#fca5a5',
-                cursor: 'pointer',
-                width: '100%',
-              }}
-            >
-              <LogOut size={15} /> Sign Out
-            </button>
-          </div>
-        </aside>
-
-        {/* ── Main Panel ── */}
+/* ────────── Admin Shell ────────── */
+function AdminShell({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
+  return (
+    <div className="dashboard-shell">
+      <div className="dashboard-container">
+        <AdminSidebar />
         <main className="dashboard-main">
           <header className="dashboard-header">
             <div>
-              <p className="dashboard-eyebrow">Storefront Operations</p>
+              <p className="dashboard-eyebrow">Storefront Management</p>
               <h1 className="dashboard-title">{title}</h1>
               <p className="dashboard-subtitle">{subtitle}</p>
             </div>
-            <div style={s.headerActions}>
-              <Link to="/products" className="btn btn-outline" style={{ fontSize: '0.84rem', padding: '8px 14px' }}>
-                <ExternalLink size={14} /> Shop
-              </Link>
-            </div>
+            <Link to="/products" className="btn btn-secondary" style={{ fontSize: '0.84rem', padding: '8px 16px', whiteSpace: 'nowrap' }}>
+              <ExternalLink size={14} /> Shop Catalog
+            </Link>
           </header>
           {children}
         </main>
@@ -175,29 +156,7 @@ function AdminShell({ title, subtitle, children }: { title: string; subtitle: st
   );
 }
 
-/* ────────── Stat Card ────────── */
-function StatCard({
-  title, value, subtitle, icon: Icon, gradient,
-}: {
-  title: string; value: string; subtitle: string;
-  icon: typeof ShoppingBag; gradient: string;
-}) {
-  return (
-    <div style={{ ...s.statCard, background: gradient }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ ...s.statIcon, background: 'rgba(255,255,255,0.22)' }}>
-          <Icon size={20} style={{ color: 'white' }} />
-        </div>
-        <ArrowRight size={16} style={{ color: 'rgba(255,255,255,0.5)' }} />
-      </div>
-      <div style={s.statValue}>{value}</div>
-      <div style={s.statTitle}>{title}</div>
-      <div style={s.statSubtitle}>{subtitle}</div>
-    </div>
-  );
-}
-
-/* ────────── Admin Dashboard ────────── */
+/* ────────── Overview Dashboard ────────── */
 export function AdminDashboard() {
   const { user } = useAuth();
   const [summary, setSummary] = useState<{
@@ -207,14 +166,21 @@ export function AdminDashboard() {
     totalOrders?: number;
     recentCustomers?: Array<{ id: string; full_name: string; email: string; role: string; created_at: string }>;
   } | null>(null);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
     async function load() {
       try {
-        const data = await adminService.getSummary();
-        if (mounted) setSummary(data);
+        const [sumData, ordData] = await Promise.allSettled([
+          adminService.getSummary(),
+          adminService.getOrders(),
+        ]);
+        if (mounted) {
+          if (sumData.status === 'fulfilled') setSummary(sumData.value);
+          if (ordData.status === 'fulfilled') setOrders(ordData.value || []);
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -223,74 +189,224 @@ export function AdminDashboard() {
     return () => { mounted = false; };
   }, []);
 
-  return (
-    <AdminShell title="Dashboard" subtitle={`Welcome back, ${user?.fullName || 'Admin'} 👋`}>
+  const totalRevenue = useMemo(() => {
+    return orders
+      .filter((o) => String(o.payment_status || '').toLowerCase() === 'paid')
+      .reduce((sum, o) => sum + Number(o.grand_total || 0), 0);
+  }, [orders]);
 
-      {/* Stats */}
-      <div style={s.statsGrid}>
-        <StatCard title="Total Accounts" value={String(summary?.totalUsers ?? 0)} subtitle="Registered user profiles" icon={Users} gradient="linear-gradient(135deg, #1a0a2e 0%, #2d1b69 100%)" />
-        <StatCard title="Customers" value={String(summary?.totalCustomers ?? 0)} subtitle="Active shoppers" icon={Users} gradient="linear-gradient(135deg, #e91e8c 0%, #ff6b35 100%)" />
-        <StatCard title="Catalog Styles" value={String(summary?.totalProducts ?? 0)} subtitle="Live store products" icon={ShoppingBag} gradient="linear-gradient(135deg, #00d4aa 0%, #00b4d8 100%)" />
-        <StatCard title="Orders Placed" value={String(summary?.totalOrders ?? 0)} subtitle="Processed store orders" icon={PackageCheck} gradient="linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)" />
+  const pendingOrdersCount = useMemo(() => {
+    return orders.filter((o) => {
+      const ps = String(o.payment_status || '').toLowerCase();
+      const st = String(o.status || '').toLowerCase();
+      return ps === 'pending' || st === 'pending' || st === 'processing';
+    }).length;
+  }, [orders]);
+
+  return (
+    <AdminShell title="Store Executive Dashboard" subtitle={`Operations summary for ${user?.fullName ? user.fullName.split(' ')[0] : 'Administrator'}.`}>
+      {/* Admin Hero Header - Concise Executive Summary */}
+      <div className="monic-dash-hero">
+        <div className="monic-dash-hero-content">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <span className="monic-live-indicator">
+              <span className="monic-live-dot" /> Live Store Stream
+            </span>
+            <span style={{ fontSize: '0.74rem', color: 'var(--muted)', fontWeight: 700 }}>
+              ● Real-Time Metrics
+            </span>
+          </div>
+          <h1 className="monic-dash-title">
+            Store Operations <em>&amp; Summary</em>
+          </h1>
+          <p className="monic-dash-desc">
+            Revenue velocity, order fulfillment queue, payment audits, and catalog inventory at a glance.
+          </p>
+        </div>
+
+        <div className="monic-dash-hero-actions">
+          <Link to="/admin/catalog" className="monic-btn-primary" style={{ fontSize: '0.86rem', padding: '10px 22px' }}>
+            <Plus size={15} /> Add Product
+          </Link>
+        </div>
       </div>
 
-      {/* Lower grid */}
-      <div style={s.lowerGrid}>
-        <section style={s.card}>
-          <h3 style={s.cardTitle}>Quick Navigation</h3>
-          <div style={s.quickActions}>
-            <Link to="/products" style={s.primaryBtn}><ShoppingBag size={15} /> Store View</Link>
-            <Link to="/admin/orders" style={s.secondaryBtn}><Package size={15} /> Orders</Link>
-            <Link to="/admin/payments" style={s.secondaryBtn}><CreditCard size={15} /> Payments</Link>
-            <Link to="/admin/customers" style={s.secondaryBtn}><Users size={15} /> Customers</Link>
-            <Link to="/admin/catalog" style={s.secondaryBtn}><Plus size={15} /> Manage Catalog</Link>
-          </div>
-        </section>
-
-        <section style={s.card}>
-          <h3 style={s.cardTitle}>Admin Profile</h3>
-          <div style={s.profileGrid}>
-            <div style={s.profileItem}><span style={s.label}>Full Name</span><strong>{user?.fullName || 'Administrator'}</strong></div>
-            <div style={s.profileItem}><span style={s.label}>Email Address</span><strong style={{ fontSize: '0.9rem' }}>{user?.email}</strong></div>
-            <div style={s.profileItem}><span style={s.label}>Role</span>
-              <span style={{ ...s.badge, background: '#ede9fe', color: '#5b21b6' }}>{user?.role}</span>
+      {/* Live Metrics Grid */}
+      <div className="monic-dash-stats-grid">
+        <div className="monic-dash-stat-card">
+          <div className="monic-dash-stat-header">
+            <span className="monic-dash-stat-label">Total Revenue</span>
+            <div className="monic-dash-stat-icon" style={{ background: 'rgba(107, 142, 107, 0.15)', color: '#4A6741' }}>
+              <TrendingUp size={18} />
             </div>
           </div>
-        </section>
+          <div className="monic-dash-stat-value">
+            {loading ? '—' : `LKR ${totalRevenue.toLocaleString()}`}
+          </div>
+          <div className="monic-dash-stat-meta">
+            Settled orders revenue
+          </div>
+        </div>
+
+        <div className="monic-dash-stat-card">
+          <div className="monic-dash-stat-header">
+            <span className="monic-dash-stat-label">Orders Placed</span>
+            <div className="monic-dash-stat-icon" style={{ background: 'rgba(196, 75, 43, 0.1)', color: '#C44B2B' }}>
+              <Package size={18} />
+            </div>
+          </div>
+          <div className="monic-dash-stat-value">
+            {loading ? '—' : String(summary?.totalOrders ?? orders.length)}
+          </div>
+          <div className="monic-dash-stat-meta">
+            <span style={{ color: pendingOrdersCount > 0 ? '#C44B2B' : 'var(--muted)', fontWeight: 700 }}>
+              {pendingOrdersCount} pending fulfillment
+            </span>
+          </div>
+        </div>
+
+        <div className="monic-dash-stat-card">
+          <div className="monic-dash-stat-header">
+            <span className="monic-dash-stat-label">Registered Members</span>
+            <div className="monic-dash-stat-icon" style={{ background: 'rgba(212, 165, 116, 0.15)', color: '#A86C32' }}>
+              <Users size={18} />
+            </div>
+          </div>
+          <div className="monic-dash-stat-value">
+            {loading ? '—' : String(summary?.totalCustomers ?? summary?.totalUsers ?? 0)}
+          </div>
+          <div className="monic-dash-stat-meta">
+            Active shopper roster
+          </div>
+        </div>
+
+        <div className="monic-dash-stat-card">
+          <div className="monic-dash-stat-header">
+            <span className="monic-dash-stat-label">Catalog Styles</span>
+            <div className="monic-dash-stat-icon" style={{ background: 'rgba(196, 75, 43, 0.1)', color: '#C44B2B' }}>
+              <ShoppingBag size={18} />
+            </div>
+          </div>
+          <div className="monic-dash-stat-value">
+            {loading ? '—' : String(summary?.totalProducts ?? 0)}
+          </div>
+          <div className="monic-dash-stat-meta">
+            <Link to="/admin/catalog" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 700 }}>
+              Manage inventory →
+            </Link>
+          </div>
+        </div>
       </div>
 
-      {/* Recent customers */}
-      <section style={{ ...s.card, marginTop: 22 }}>
-        <h3 style={s.cardTitle}>Recent Customer Registrations</h3>
+      {/* Quick Operation Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18, marginBottom: 24 }}>
+        <div className="dashboard-section-card">
+          <h3 className="dashboard-card-title">Quick Operations</h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            <Link to="/admin/orders" className="btn btn-primary" style={{ fontSize: '0.86rem', padding: '9px 16px' }}>
+              <Package size={14} /> Process Orders
+            </Link>
+            <Link to="/admin/payments" className="btn btn-secondary" style={{ fontSize: '0.86rem', padding: '9px 16px' }}>
+              <CreditCard size={14} /> Audit Slips
+            </Link>
+            <Link to="/admin/catalog" className="btn btn-secondary" style={{ fontSize: '0.86rem', padding: '9px 16px' }}>
+              <Plus size={14} /> Add Product
+            </Link>
+            <Link to="/admin/customers" className="btn btn-secondary" style={{ fontSize: '0.86rem', padding: '9px 16px' }}>
+              <Users size={14} /> View Roster
+            </Link>
+          </div>
+        </div>
+
+        <div className="dashboard-section-card">
+          <h3 className="dashboard-card-title">Admin Account Profile</h3>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem' }}>
+              <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Administrator</span>
+              <strong style={{ color: 'var(--primary)' }}>{user?.fullName || 'Full Access Admin'}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem' }}>
+              <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Email Address</span>
+              <strong style={{ color: 'var(--primary)' }}>{user?.email}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem' }}>
+              <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Permission Tier</span>
+              <span className="badge badge-green">Superuser</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Customer Registrations */}
+      <div className="dashboard-section-card">
+        <h3 className="dashboard-card-title">Recent Client Registrations</h3>
         {loading ? (
-          <div style={s.emptyBox}>Loading recent signups…</div>
+          <div style={{ padding: '32px 0', textAlign: 'center' }}>
+            <div className="loader" style={{ margin: '0 auto 10px' }} />
+            <p style={{ color: 'var(--muted)', fontSize: '0.86rem' }}>Loading recent signups…</p>
+          </div>
         ) : summary?.recentCustomers?.length ? (
-          <div style={s.listWrap}>
+          <div style={{ display: 'grid', gap: 10 }}>
             {summary.recentCustomers.map((c) => (
-              <div key={c.id} style={s.listItem}>
+              <div
+                key={c.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '12px 16px',
+                  borderRadius: 14,
+                  background: 'var(--panel-soft)',
+                  border: '1px solid var(--border)',
+                  flexWrap: 'wrap',
+                  gap: 10,
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={s.avatarChip}>{(c.full_name || c.email).slice(0, 2).toUpperCase()}</div>
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      background: 'var(--accent-soft)',
+                      color: 'var(--accent)',
+                      fontWeight: 800,
+                      fontSize: '0.8rem',
+                      display: 'grid',
+                      placeItems: 'center',
+                    }}
+                  >
+                    {(c.full_name || c.email).slice(0, 2).toUpperCase()}
+                  </div>
                   <div>
-                    <strong style={{ fontSize: '0.95rem', color: '#1a0a2e' }}>{c.full_name || 'Member'}</strong>
-                    <div style={s.muted}>{c.email}</div>
+                    <strong style={{ fontSize: '0.94rem', color: 'var(--primary)', display: 'block' }}>
+                      {c.full_name || 'Clothify Member'}
+                    </strong>
+                    <span style={{ color: 'var(--muted)', fontSize: '0.78rem' }}>{c.email}</span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ ...s.badge, ...s.badgeGreen }}>{c.role}</span>
-                  <span style={s.muted}>{new Date(c.created_at).toLocaleDateString()}</span>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span className="badge badge-blue">{c.role.toUpperCase()}</span>
+                  <span style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>
+                    {new Date(c.created_at).toLocaleDateString()}
+                  </span>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div style={s.emptyBox}>No recent customer signups yet.</div>
+          <div className="dashboard-empty-box">
+            <Users size={34} style={{ color: 'var(--muted)', marginBottom: 8 }} />
+            <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.88rem' }}>No recent customer registrations recorded.</p>
+          </div>
         )}
-      </section>
+      </div>
     </AdminShell>
   );
 }
 
-/* ────────── Admin Orders ────────── */
+/* ────────── Fulfillment Steps ────────── */
 const FULFILLMENT_STEPS = [
   { value: 'pending', label: 'Pending' },
   { value: 'confirmed', label: 'Confirmed' },
@@ -300,13 +416,15 @@ const FULFILLMENT_STEPS = [
   { value: 'cancelled', label: 'Cancelled' },
 ] as const;
 
+/* ────────── Admin Orders Page ────────── */
 export function AdminOrdersPage() {
-  const [orders, setOrders] = useState<Array<{ id: string; order_number: string; status: string; grand_total: string | number; payment_status: string; payment_method?: string; slipImage?: string | null; created_at: string; customer_name?: string; customer_email?: string }>>([]);
+  const [orders, setOrders] = useState<Array<{ id: string; order_number: string; status: string; grand_total: string | number; payment_status: string; payment_method?: string; slipImage?: string | null; created_at: string; customer_name?: string; customer_email?: string; items?: any[] }>>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'paid' | 'failed' | 'rejected'>('all');
   const [searchFilter, setSearchFilter] = useState('');
   const [selectedSlip, setSelectedSlip] = useState<string | null>(null);
+  const [invoiceModalOrder, setInvoiceModalOrder] = useState<any | null>(null);
 
   const load = async () => {
     try {
@@ -355,7 +473,7 @@ export function AdminOrdersPage() {
     if (normalized === 'delivered') return { background: '#dcfce7', color: '#166534', label: 'Delivered 🎉' };
     if (normalized === 'shipped') return { background: '#e0f2fe', color: '#0369a1', label: 'Shipped 🚚' };
     if (normalized === 'processing') return { background: '#fef3c7', color: '#92400e', label: 'Processing 📦' };
-    if (normalized === 'confirmed') return { background: '#ede9fe', color: '#6d28d9', label: 'Confirmed ✓' };
+    if (normalized === 'confirmed') return { background: 'var(--accent-soft)', color: 'var(--primary)', label: 'Confirmed ✓' };
     if (normalized === 'cancelled') return { background: '#fee2e2', color: '#991b1b', label: 'Cancelled ✕' };
     return { background: '#f3f4f6', color: '#4b5563', label: 'Pending ⏳' };
   };
@@ -373,26 +491,39 @@ export function AdminOrdersPage() {
     });
   }, [orders, activeTab, searchFilter]);
 
-
   return (
-    <AdminShell title="Store Orders" subtitle="Review incoming purchases, customer receipts, and update live order fulfillment tracking.">
-      {/* Filters bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
-        <div style={{ display: 'flex', gap: 8 }}>
+    <AdminShell title="Store Order Management" subtitle="Review incoming purchases, inspect bank slip receipts, and update live fulfillment steps.">
+      {/* Search & Filter Header */}
+      <div className="monic-order-filters-wrap" style={{ marginBottom: 20 }}>
+        <div className="monic-order-search-box">
+          <Search size={16} color="var(--muted)" />
+          <input
+            type="text"
+            placeholder="Search order # or customer..."
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            className="monic-order-search-input"
+          />
+          {searchFilter && (
+            <button
+              type="button"
+              onClick={() => setSearchFilter('')}
+              style={{ background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', padding: 2 }}
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        <div className="monic-order-filter-pills">
           {(['all', 'pending', 'paid', 'failed', 'rejected'] as const).map((tab) => (
             <button
               key={tab}
               type="button"
-              className={`tag ${activeTab === tab ? 'active' : ''}`}
+              className={`monic-order-filter-btn ${activeTab === tab ? 'active' : ''}`}
               onClick={() => setActiveTab(tab)}
-              style={{
-                textTransform: 'capitalize',
-                padding: '8px 16px',
-                fontWeight: 700,
-                fontSize: '0.84rem',
-              }}
             >
-              {tab} ({tab === 'all'
+              {tab === 'all' ? 'All Orders' : tab.charAt(0).toUpperCase() + tab.slice(1)} ({tab === 'all'
                 ? orders.length
                 : orders.filter((o) => {
                     const normalized = String(o.payment_status || '').toLowerCase();
@@ -402,36 +533,27 @@ export function AdminOrdersPage() {
             </button>
           ))}
         </div>
-
-        <div className="auth-input-wrapper" style={{ width: 260 }}>
-          <span className="auth-input-icon"><Search size={15} /></span>
-          <input
-            type="text"
-            placeholder="Search order # or customer..."
-            value={searchFilter}
-            onChange={(e) => setSearchFilter(e.target.value)}
-            className="auth-input-element"
-            style={{ minHeight: 38, paddingLeft: 36 }}
-          />
-        </div>
       </div>
 
       {loading ? (
-        <div style={s.emptyBox}>Loading store orders…</div>
+        <div style={{ textAlign: 'center', padding: '48px 0' }}>
+          <div className="loader" style={{ margin: '0 auto 12px' }} />
+          <p style={{ color: 'var(--muted)', fontWeight: 600 }}>Loading store orders…</p>
+        </div>
       ) : filteredOrders.length ? (
-        <div style={s.tableWrap}>
+        <div style={{ overflowX: 'auto', borderRadius: 16, border: '1px solid var(--border)', background: 'var(--panel)' }}>
           <table className="cf-table">
             <thead>
               <tr>
                 <th>Order #</th>
-                <th>Customer</th>
+                <th>Client</th>
                 <th>Payment Method</th>
                 <th>Payment Status</th>
-                <th>Fulfillment State</th>
-                <th>Bank Slip</th>
-                <th>Order Total</th>
-                <th>Placed Date</th>
-                <th>Verification Action</th>
+                <th>Fulfillment Tracking</th>
+                <th>Receipt Slip</th>
+                <th>Total</th>
+                <th>Date</th>
+                <th>Audit Action</th>
               </tr>
             </thead>
             <tbody>
@@ -441,41 +563,46 @@ export function AdminOrdersPage() {
                 return (
                   <tr key={order.id}>
                     <td>
-                      <strong style={{ color: 'var(--primary)', fontWeight: 800 }}>
+                      <button
+                        type="button"
+                        onClick={() => setInvoiceModalOrder(order)}
+                        style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', fontWeight: 800, textAlign: 'left' }}
+                        title="View Invoice"
+                      >
                         {order.order_number}
-                      </strong>
+                      </button>
                     </td>
                     <td>
                       <div>
-                        <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.92rem' }}>
+                        <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>
                           {order.customer_name || 'Valued Shopper'}
                         </div>
-                        <div style={{ color: 'var(--muted)', fontSize: '0.78rem' }}>
+                        <div style={{ color: 'var(--muted)', fontSize: '0.76rem' }}>
                           {order.customer_email}
                         </div>
                       </div>
                     </td>
                     <td>
-                      <span style={{ textTransform: 'capitalize', fontSize: '0.85rem', fontWeight: 600 }}>
+                      <span style={{ textTransform: 'capitalize', fontSize: '0.84rem', fontWeight: 600 }}>
                         {order.payment_method === 'bank_transfer' ? '🏦 Bank Transfer' : '💳 Card / Online'}
                       </span>
                     </td>
                     <td>
-                      <span style={{ ...s.badge, background: badgeInfo.background, color: badgeInfo.color }}>
+                      <span className="badge" style={{ background: badgeInfo.background, color: badgeInfo.color }}>
                         {badgeInfo.label}
                       </span>
                     </td>
                     <td>
-                      <div style={{ minWidth: 168 }}>
+                      <div style={{ minWidth: 160 }}>
                         <select
                           value={order.status || 'pending'}
                           disabled={processing === order.id}
                           onChange={(e) => handleStatusChange(order.id, e.target.value)}
                           style={{
                             width: '100%',
-                            padding: '8px 10px',
+                            padding: '7px 10px',
                             borderRadius: 10,
-                            fontSize: '0.82rem',
+                            fontSize: '0.8rem',
                             fontWeight: 700,
                             border: '1.5px solid var(--border)',
                             background: orderBadge.background,
@@ -489,33 +616,6 @@ export function AdminOrdersPage() {
                             </option>
                           ))}
                         </select>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
-                          {FULFILLMENT_STEPS.filter((step) => step.value !== 'cancelled' && step.value !== 'pending').map((step) => {
-                            const isActive = String(order.status || '').toLowerCase() === step.value;
-                            const canAdvance = String(order.payment_status || '').toLowerCase() === 'paid' || step.value === 'confirmed';
-                            return (
-                              <button
-                                key={step.value}
-                                type="button"
-                                disabled={processing === order.id || isActive || !canAdvance}
-                                onClick={() => handleStatusChange(order.id, step.value)}
-                                style={{
-                                  border: isActive ? '1.5px solid currentColor' : '1px solid #e0d9f0',
-                                  background: isActive ? orderBadge.background : '#fff',
-                                  color: isActive ? orderBadge.color : '#6b5a86',
-                                  borderRadius: 999,
-                                  padding: '3px 8px',
-                                  fontSize: '0.68rem',
-                                  fontWeight: 800,
-                                  cursor: processing === order.id || !canAdvance ? 'not-allowed' : 'pointer',
-                                  opacity: !canAdvance && !isActive ? 0.45 : 1,
-                                }}
-                              >
-                                {step.label}
-                              </button>
-                            );
-                          })}
-                        </div>
                       </div>
                     </td>
                     <td>
@@ -524,46 +624,47 @@ export function AdminOrdersPage() {
                           type="button"
                           onClick={() => setSelectedSlip(order.slipImage || null)}
                           style={{
-                            background: 'var(--accent-soft)',
+                            background: 'var(--panel-soft)',
                             border: '1px solid var(--border)',
                             borderRadius: 8,
-                            padding: '4px 8px',
+                            padding: '3px 8px',
                             color: 'var(--accent)',
                             fontWeight: 700,
-                            fontSize: '0.82rem',
+                            fontSize: '0.78rem',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 8,
+                            gap: 6,
                             cursor: 'pointer',
                           }}
                         >
                           <img
                             src={order.slipImage}
-                            alt="Bank slip thumbnail"
-                            style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', border: '1px solid var(--border)' }}
+                            alt="Slip"
+                            style={{ width: 28, height: 28, borderRadius: 5, objectFit: 'cover' }}
                           />
-                          <Eye size={13} /> View
+                          <Eye size={12} /> View
                         </button>
                       ) : (
-                        <span style={s.muted}>
+                        <span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
                           {order.payment_method === 'bank_transfer' ? 'No slip' : '—'}
                         </span>
                       )}
                     </td>
                     <td>
-                      <strong style={{ color: 'var(--primary)', fontSize: '0.95rem' }}>
+                      <strong style={{ color: 'var(--primary)', fontSize: '0.92rem' }}>
                         LKR {Number(order.grand_total || 0).toLocaleString()}
                       </strong>
                     </td>
-                    <td style={{ color: 'var(--muted)', fontSize: '0.86rem' }}>
+                    <td style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>
                       {new Date(order.created_at).toLocaleDateString()}
                     </td>
                     <td>
                       {order.payment_status === 'pending' ? (
-                        <div style={{ display: 'flex', gap: 8 }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
                           <button
                             type="button"
-                            style={s.confirmBtn}
+                            className="btn btn-primary"
+                            style={{ padding: '6px 12px', fontSize: '0.76rem', borderRadius: 8 }}
                             disabled={processing === order.id}
                             onClick={() => handlePaymentDecision(order.id, 'paid')}
                           >
@@ -571,7 +672,7 @@ export function AdminOrdersPage() {
                           </button>
                           <button
                             type="button"
-                            style={s.rejectBtn}
+                            style={{ padding: '6px 10px', fontSize: '0.76rem', borderRadius: 8, background: '#fee2e2', color: '#991b1b', border: 'none', fontWeight: 700, cursor: 'pointer' }}
                             disabled={processing === order.id}
                             onClick={() => handlePaymentDecision(order.id, 'rejected')}
                           >
@@ -579,7 +680,14 @@ export function AdminOrdersPage() {
                           </button>
                         </div>
                       ) : (
-                        <span style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>Settled</span>
+                        <button
+                          type="button"
+                          onClick={() => setInvoiceModalOrder(order)}
+                          className="btn btn-secondary"
+                          style={{ padding: '5px 10px', fontSize: '0.76rem', borderRadius: 8 }}
+                        >
+                          Invoice
+                        </button>
                       )}
                     </td>
                   </tr>
@@ -589,18 +697,20 @@ export function AdminOrdersPage() {
           </table>
         </div>
       ) : (
-        <div style={s.emptyBox}>No orders matching the selected filter criteria.</div>
+        <div className="dashboard-empty-box">
+          <Package size={36} style={{ color: 'var(--muted)', marginBottom: 10 }} />
+          <h3 style={{ margin: '0 0 6px', color: 'var(--primary)' }}>No Matching Orders</h3>
+          <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.86rem' }}>Try clearing filters or search terms.</p>
+        </div>
       )}
 
       {/* Slip Preview Modal */}
       {selectedSlip && (
         <div className="cf-modal-backdrop" onClick={() => setSelectedSlip(null)}>
-          <div className="cf-modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 540 }}>
+          <div className="cf-modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
             <div className="cf-modal-header">
-              <h3>Bank Transfer Receipt</h3>
-              <button type="button" className="cf-modal-close" onClick={() => setSelectedSlip(null)}>
-                ✕
-              </button>
+              <h3>Bank Transfer Deposit Slip</h3>
+              <button type="button" className="cf-modal-close" onClick={() => setSelectedSlip(null)}>✕</button>
             </div>
             <div className="cf-modal-body" style={{ textAlign: 'center' }}>
               <img
@@ -611,7 +721,7 @@ export function AdminOrdersPage() {
               <button
                 type="button"
                 className="btn btn-primary"
-                style={{ width: '100%', marginTop: 18 }}
+                style={{ width: '100%', marginTop: 16 }}
                 onClick={() => setSelectedSlip(null)}
               >
                 Close Preview
@@ -620,11 +730,66 @@ export function AdminOrdersPage() {
           </div>
         </div>
       )}
+
+      {/* Invoice Modal */}
+      {invoiceModalOrder && (
+        <div className="cf-modal-backdrop" onClick={() => setInvoiceModalOrder(null)}>
+          <div className="cf-modal-box" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
+            <div className="cf-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <FileText size={20} color="var(--accent)" />
+                <h3 style={{ margin: 0 }}>Invoice #{invoiceModalOrder.order_number}</h3>
+              </div>
+              <button type="button" className="cf-modal-close" onClick={() => setInvoiceModalOrder(null)}>✕</button>
+            </div>
+            <div className="cf-modal-body">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16, background: 'var(--panel-soft)', padding: 12, borderRadius: 12 }}>
+                <div>
+                  <span className="dashboard-label">Customer</span>
+                  <strong style={{ color: 'var(--primary)', fontSize: '0.86rem' }}>{invoiceModalOrder.customer_name || 'Shopper'}</strong>
+                </div>
+                <div>
+                  <span className="dashboard-label">Email</span>
+                  <span style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>{invoiceModalOrder.customer_email || '—'}</span>
+                </div>
+                <div>
+                  <span className="dashboard-label">Payment Method</span>
+                  <strong style={{ color: 'var(--primary)', fontSize: '0.86rem' }}>{invoiceModalOrder.payment_method === 'bank_transfer' ? 'Bank Transfer' : 'Card'}</strong>
+                </div>
+                <div>
+                  <span className="dashboard-label">Payment Status</span>
+                  <strong style={{ color: 'var(--accent-3)', fontSize: '0.86rem', textTransform: 'uppercase' }}>{invoiceModalOrder.payment_status}</strong>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <span className="dashboard-label" style={{ marginBottom: 6 }}>Purchased Items</span>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {invoiceModalOrder.items?.map((item: any, i: number) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--panel)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                      <div>
+                        <strong style={{ fontSize: '0.88rem', color: 'var(--primary)' }}>{item.product_name}</strong>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>Qty: {item.quantity} · LKR {Number(item.unit_price || 0).toLocaleString()} each</div>
+                      </div>
+                      <strong style={{ fontSize: '0.9rem', color: 'var(--primary)' }}>LKR {(Number(item.unit_price || 0) * item.quantity).toLocaleString()}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--primary)' }}>Grand Total</span>
+                <span style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--accent)' }}>LKR {Number(invoiceModalOrder.grand_total || 0).toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminShell>
   );
 }
 
-/* ────────── Admin Customers ────────── */
+/* ────────── Admin Customers Page ────────── */
 export function AdminCustomersPage() {
   const [customers, setCustomers] = useState<Array<{ id: string; full_name: string | null; email: string; role: string; is_active: boolean; created_at: string }>>([]);
   const [loading, setLoading] = useState(true);
@@ -654,28 +819,30 @@ export function AdminCustomersPage() {
   }, [customers, search]);
 
   return (
-    <AdminShell title="Registered Customers" subtitle="Overview of all shoppers and registered client accounts.">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+    <AdminShell title="Registered Customer Roster" subtitle="Overview of all shoppers, client profiles, and verified member tiers.">
+      <div className="monic-order-filters-wrap" style={{ marginBottom: 20 }}>
         <div style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.95rem' }}>
           Total Accounts: {customers.length}
         </div>
-        <div className="auth-input-wrapper" style={{ width: 280 }}>
-          <span className="auth-input-icon"><Search size={15} /></span>
+        <div className="monic-order-search-box">
+          <Search size={16} color="var(--muted)" />
           <input
             type="text"
             placeholder="Search by name, email or role..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="auth-input-element"
-            style={{ minHeight: 38, paddingLeft: 36 }}
+            className="monic-order-search-input"
           />
         </div>
       </div>
 
       {loading ? (
-        <div style={s.emptyBox}>Loading customer roster…</div>
+        <div style={{ textAlign: 'center', padding: '48px 0' }}>
+          <div className="loader" style={{ margin: '0 auto 12px' }} />
+          <p style={{ color: 'var(--muted)', fontWeight: 600 }}>Loading customer roster…</p>
+        </div>
       ) : filtered.length ? (
-        <div style={s.tableWrap}>
+        <div style={{ overflowX: 'auto', borderRadius: 16, border: '1px solid var(--border)', background: 'var(--panel)' }}>
           <table className="cf-table">
             <thead>
               <tr>
@@ -690,41 +857,60 @@ export function AdminCustomersPage() {
               {filtered.map((c) => (
                 <tr key={c.id}>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={s.avatarChip}>{(c.full_name || c.email).slice(0, 2).toUpperCase()}</div>
-                      <strong style={{ color: 'var(--primary)' }}>{c.full_name || 'Clothify Member'}</strong>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 10,
+                          background: 'var(--accent-soft)',
+                          color: 'var(--accent)',
+                          fontWeight: 800,
+                          fontSize: '0.8rem',
+                          display: 'grid',
+                          placeItems: 'center',
+                        }}
+                      >
+                        {(c.full_name || c.email).slice(0, 2).toUpperCase()}
+                      </div>
+                      <strong style={{ color: 'var(--primary)', fontSize: '0.92rem' }}>{c.full_name || 'Clothify Member'}</strong>
                     </div>
                   </td>
-                  <td style={{ color: 'var(--muted)' }}>{c.email}</td>
+                  <td style={{ color: 'var(--muted)', fontSize: '0.88rem' }}>{c.email}</td>
                   <td>
-                    <span style={{ ...s.badge, background: c.role === 'admin' ? '#ede9fe' : '#e0f2fe', color: c.role === 'admin' ? '#5b21b6' : '#0369a1' }}>
+                    <span className={`badge ${c.role === 'admin' ? 'badge-purple' : 'badge-blue'}`}>
                       {c.role.toUpperCase()}
                     </span>
                   </td>
                   <td>
-                    <span style={{ ...s.badge, background: c.is_active ? '#dcfce7' : '#f3f4f6', color: c.is_active ? '#166534' : '#374151' }}>
+                    <span className={`badge ${c.is_active ? 'badge-green' : 'badge-amber'}`}>
                       {c.is_active ? '● Active' : '○ Inactive'}
                     </span>
                   </td>
-                  <td style={{ color: 'var(--muted)', fontSize: '0.88rem' }}>{new Date(c.created_at).toLocaleDateString()}</td>
+                  <td style={{ color: 'var(--muted)', fontSize: '0.86rem' }}>{new Date(c.created_at).toLocaleDateString()}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       ) : (
-        <div style={s.emptyBox}>No customers match your search query.</div>
+        <div className="dashboard-empty-box">
+          <Users size={36} style={{ color: 'var(--muted)', marginBottom: 10 }} />
+          <h3 style={{ margin: '0 0 6px', color: 'var(--primary)' }}>No Customers Found</h3>
+          <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.86rem' }}>No clients matched your query.</p>
+        </div>
       )}
     </AdminShell>
   );
 }
 
-/* ────────── Admin Payments ────────── */
+/* ────────── Admin Payments Page ────────── */
 export function AdminPaymentsPage() {
   const [payments, setPayments] = useState<Array<{ id: string; order_id: string; order_number?: string; customer_name?: string; customer_email?: string; payment_method: string; amount: string | number; status: string; slipImage?: string | null; notes?: string | null; created_at: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
   const [selectedSlip, setSelectedSlip] = useState<string | null>(null);
+  const [methodFilter, setMethodFilter] = useState<'all' | 'bank_transfer' | 'card'>('all');
 
   const load = async () => {
     try {
@@ -754,61 +940,113 @@ export function AdminPaymentsPage() {
     return { background: '#fef3c7', color: '#92400e', label: 'Under Review' };
   };
 
+  const filteredPayments = useMemo(() => {
+    return payments.filter(p => {
+      if (methodFilter === 'all') return true;
+      return p.payment_method === methodFilter;
+    });
+  }, [payments, methodFilter]);
+
   return (
-    <AdminShell title="Payment Settlements" subtitle="Verify and reconcile bank transfers, slip deposits, and transactions.">
+    <AdminShell title="Payment Settlements &amp; Bank Slips" subtitle="Verify and reconcile bank transfers, deposit slips, and transaction logs.">
+      <div className="monic-order-filters-wrap" style={{ marginBottom: 20 }}>
+        <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--primary)' }}>
+          Settlements ({filteredPayments.length})
+        </span>
+
+        <div className="monic-order-filter-pills">
+          {(['all', 'bank_transfer', 'card'] as const).map(tab => (
+            <button
+              key={tab}
+              type="button"
+              className={`monic-order-filter-btn ${methodFilter === tab ? 'active' : ''}`}
+              onClick={() => setMethodFilter(tab)}
+            >
+              {tab === 'all' ? 'All Methods' : tab === 'bank_transfer' ? '🏦 Bank Transfers' : '💳 Cards'}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {loading ? (
-        <div style={s.emptyBox}>Loading payment logs…</div>
-      ) : payments.length ? (
-        <div style={{ display: 'grid', gap: 18 }}>
-          {payments.map((payment) => {
+        <div style={{ textAlign: 'center', padding: '48px 0' }}>
+          <div className="loader" style={{ margin: '0 auto 12px' }} />
+          <p style={{ color: 'var(--muted)', fontWeight: 600 }}>Loading payment logs…</p>
+        </div>
+      ) : filteredPayments.length ? (
+        <div style={{ display: 'grid', gap: 16 }}>
+          {filteredPayments.map((payment) => {
             const badge = statusStyle(payment.status);
             return (
-              <div key={payment.id} style={s.paymentCard}>
+              <div key={payment.id} className="monic-order-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ ...s.avatarChip, background: 'var(--grad-accent)' }}>
+                    <div
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 12,
+                        background: 'var(--accent-soft)',
+                        color: 'var(--accent)',
+                        display: 'grid',
+                        placeItems: 'center',
+                        fontWeight: 900,
+                        fontSize: '0.85rem',
+                      }}
+                    >
                       {(payment.customer_name || payment.customer_email || 'U').slice(0, 2).toUpperCase()}
                     </div>
                     <div>
                       <strong style={{ fontSize: '1.05rem', color: 'var(--primary)' }}>
                         {payment.order_number || payment.order_id}
                       </strong>
-                      <div style={s.muted}>{payment.customer_name || payment.customer_email || 'Shopper'}</div>
+                      <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>{payment.customer_name || payment.customer_email || 'Shopper'}</div>
                     </div>
                   </div>
-                  <span style={{ ...s.badge, background: badge.background, color: badge.color, fontSize: '0.84rem', padding: '6px 14px' }}>
+                  <span className="badge" style={{ background: badge.background, color: badge.color, fontSize: '0.82rem', padding: '6px 14px' }}>
                     {badge.label}
                   </span>
                 </div>
 
-                <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 14, background: 'var(--panel-soft)', padding: 14, borderRadius: 12 }}>
-                  <div><span style={s.label}>Payment Method</span><strong>{payment.payment_method === 'bank_transfer' ? 'Bank Transfer' : 'Card Payment'}</strong></div>
-                  <div><span style={s.label}>Settlement Amount</span><strong style={{ color: 'var(--accent)', fontSize: '1.05rem' }}>LKR {Number(payment.amount || 0).toLocaleString()}</strong></div>
-                  <div><span style={s.label}>Date Recorded</span><span style={{ color: 'var(--muted)', fontWeight: 600 }}>{new Date(payment.created_at).toLocaleDateString()}</span></div>
+                <div className="monic-order-summary-strip" style={{ marginTop: 16 }}>
+                  <div><span className="dashboard-label">Method</span><strong style={{ color: 'var(--primary)' }}>{payment.payment_method === 'bank_transfer' ? '🏦 Bank Transfer' : '💳 Card Payment'}</strong></div>
+                  <div><span className="dashboard-label">Amount</span><strong style={{ color: 'var(--accent)', fontSize: '1.05rem' }}>LKR {Number(payment.amount || 0).toLocaleString()}</strong></div>
+                  <div><span className="dashboard-label">Timestamp</span><span style={{ color: 'var(--muted)', fontWeight: 600, fontSize: '0.85rem' }}>{new Date(payment.created_at).toLocaleDateString()}</span></div>
                 </div>
 
                 {payment.slipImage ? (
                   <div style={{ marginTop: 16 }}>
-                    <span style={s.label}>Uploaded Deposit Slip</span>
+                    <span className="dashboard-label" style={{ marginBottom: 6 }}>Attached Bank Slip</span>
                     <img
                       src={payment.slipImage}
                       alt="Bank slip"
-                      style={{ marginTop: 8, maxWidth: 220, maxHeight: 160, borderRadius: 12, border: '1.5px solid var(--border)', cursor: 'pointer', objectFit: 'cover' }}
+                      style={{ maxWidth: 200, maxHeight: 140, borderRadius: 12, border: '1.5px solid var(--border)', cursor: 'pointer', objectFit: 'cover' }}
                       onClick={() => setSelectedSlip(payment.slipImage || null)}
                     />
                   </div>
                 ) : payment.payment_method === 'bank_transfer' ? (
-                  <div style={{ marginTop: 16, color: '#92400e', fontWeight: 700, fontSize: '0.85rem' }}>
-                    No bank slip was stored for this order.
+                  <div style={{ marginTop: 14, color: '#92400e', fontWeight: 700, fontSize: '0.82rem' }}>
+                    No bank slip was uploaded.
                   </div>
                 ) : null}
 
                 {(payment.status === 'pending' || payment.status === 'failed') && (
-                  <div style={{ marginTop: 18, display: 'flex', gap: 10 }}>
-                    <button type="button" style={s.confirmBtnLg} disabled={processing === payment.order_id} onClick={() => handleDecision(payment.order_id, 'paid')}>
+                  <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{ padding: '8px 18px', fontSize: '0.84rem' }}
+                      disabled={processing === payment.order_id}
+                      onClick={() => handleDecision(payment.order_id, 'paid')}
+                    >
                       {processing === payment.order_id ? 'Processing…' : '✓ Accept Payment'}
                     </button>
-                    <button type="button" style={s.rejectBtnLg} disabled={processing === payment.order_id} onClick={() => handleDecision(payment.order_id, 'rejected')}>
+                    <button
+                      type="button"
+                      style={{ padding: '8px 16px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 999, fontWeight: 700, fontSize: '0.84rem', cursor: 'pointer' }}
+                      disabled={processing === payment.order_id}
+                      onClick={() => handleDecision(payment.order_id, 'rejected')}
+                    >
                       ✕ Reject
                     </button>
                   </div>
@@ -818,12 +1056,16 @@ export function AdminPaymentsPage() {
           })}
         </div>
       ) : (
-        <div style={s.emptyBox}>No payment submissions currently recorded.</div>
+        <div className="dashboard-empty-box">
+          <CreditCard size={36} style={{ color: 'var(--muted)', marginBottom: 10 }} />
+          <h3 style={{ margin: '0 0 6px', color: 'var(--primary)' }}>No Payment Logs</h3>
+          <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.86rem' }}>No settlement records found.</p>
+        </div>
       )}
 
       {selectedSlip && (
         <div className="cf-modal-backdrop" onClick={() => setSelectedSlip(null)}>
-          <div className="cf-modal-box" onClick={(e) => e.stopPropagation()}>
+          <div className="cf-modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
             <div className="cf-modal-header">
               <h3>Bank Slip Viewer</h3>
               <button type="button" className="cf-modal-close" onClick={() => setSelectedSlip(null)}>✕</button>
@@ -839,7 +1081,7 @@ export function AdminPaymentsPage() {
   );
 }
 
-/* ────────── Admin Catalog ────────── */
+/* ────────── Admin Catalog Page ────────── */
 export function AdminCatalogPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [, setCategories] = useState<Category[]>([]);
@@ -880,8 +1122,6 @@ export function AdminCatalogPage() {
   };
 
   useEffect(() => { loadCatalog(); }, []);
-
-  const productCount = useMemo(() => products.length, [products]);
 
   const filteredInventory = useMemo(() => {
     return products.filter((p) => {
@@ -947,24 +1187,17 @@ export function AdminCatalogPage() {
       setForm({ name: '', brand: '', segment: 'Men', categoryName: 'T-Shirts', price: '', discountPercentage: '0', description: '' });
       setImageUrls([]);
       setVariantRows([{ size: '', colors: [{ color: '', stock: '0' }] }]);
-
-      try {
-        await loadCatalog();
-      } catch {
-        // Keep the success message if the catalog refresh fails after a successful create.
-      }
-
+      await loadCatalog();
       alert('Product created successfully.');
     } catch (error: any) {
-      const message = error?.response?.data?.message || error?.message || 'Unable to add product. Please check the details and try again.';
-      alert(message);
+      alert(error?.response?.data?.message || error?.message || 'Unable to add product.');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (productId: string) => {
-    if (!window.confirm('Delete this product?')) return;
+    if (!window.confirm('Are you sure you want to remove this garment from the catalog?')) return;
     await productService.deleteProduct(productId);
     await loadCatalog();
   };
@@ -982,74 +1215,94 @@ export function AdminCatalogPage() {
   };
 
   return (
-    <AdminShell title="Catalog" subtitle="Create, manage, and review products in your storefront.">
-
+    <AdminShell title="Storefront Catalog &amp; Inventory" subtitle="Upload new garment pieces, manage stock variants, and update price tags.">
       {/* ── Add product form ── */}
-      <section style={s.card}>
-        <h3 style={s.cardTitle}>Add New Product</h3>
-        <div style={s.formGrid}>
-          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Product name" style={s.input} />
-          <input value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} placeholder="Brand" style={s.input} />
-          <select
-            value={form.segment}
-            onChange={(e) => {
-              const seg = e.target.value;
-              const defaultCat = seg === 'Women' ? 'Dresses' : 'T-Shirts';
-              setForm({ ...form, segment: seg, categoryName: defaultCat });
-            }}
-            style={s.input}
-          >
-            <option value="Men">Men's Fashion</option>
-            <option value="Women">Women's Fashion</option>
-            <option value="Kids">Kids' Collection</option>
-          </select>
-          <select value={form.categoryName} onChange={(e) => setForm({ ...form, categoryName: e.target.value })} style={s.input}>
-            {form.segment === 'Men' && (
-              <>
-                <option value="T-Shirts">T-Shirts</option>
-                <option value="Shirts">Shirts</option>
-                <option value="Jackets">Jackets</option>
-                <option value="Jeans">Jeans</option>
-                <option value="Trousers">Trousers</option>
-                <option value="Shoes">Shoes</option>
-                <option value="Accessories">Accessories</option>
-              </>
-            )}
-            {form.segment === 'Women' && (
-              <>
-                <option value="Dresses">Dresses</option>
-                <option value="Skirts">Skirts</option>
-                <option value="Blouses">Blouses</option>
-                <option value="T-Shirts">T-Shirts</option>
-                <option value="Shirts">Shirts</option>
-                <option value="Jackets">Jackets</option>
-                <option value="Jeans">Jeans</option>
-                <option value="Trousers">Trousers</option>
-                <option value="Shoes">Shoes</option>
-                <option value="Accessories">Accessories</option>
-              </>
-            )}
-            {form.segment === 'Kids' && (
-              <>
-                <option value="T-Shirts">T-Shirts</option>
-                <option value="Shirts">Shirts</option>
-                <option value="Dresses">Dresses</option>
-                <option value="Jackets">Jackets</option>
-                <option value="Jeans">Jeans</option>
-                <option value="Trousers">Trousers</option>
-              </>
-            )}
-          </select>
-          <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="Price (LKR)" type="number" min="0" step="0.01" style={s.input} />
-          <input value={form.discountPercentage} onChange={(e) => setForm({ ...form, discountPercentage: e.target.value })} placeholder="Discount %" type="number" min="0" max="100" step="0.01" style={s.input} />
-          <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Product description" style={{ ...s.input, minHeight: 100, gridColumn: 'span 2', resize: 'vertical' }} />
+      <div className="dashboard-section-card" style={{ marginBottom: 24 }}>
+        <h3 className="dashboard-card-title">Add New Garment to Catalog</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+          <div>
+            <label className="dashboard-label">Product Name</label>
+            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Silk Linen Relaxed Shirt" className="auth-input-element" />
+          </div>
+          <div>
+            <label className="dashboard-label">Brand Label</label>
+            <input value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} placeholder="Clothify Boutique" className="auth-input-element" />
+          </div>
+          <div>
+            <label className="dashboard-label">Department Segment</label>
+            <select
+              value={form.segment}
+              onChange={(e) => {
+                const seg = e.target.value;
+                const defaultCat = seg === 'Women' ? 'Dresses' : 'T-Shirts';
+                setForm({ ...form, segment: seg, categoryName: defaultCat });
+              }}
+              className="auth-input-element"
+            >
+              <option value="Men">Men's Department</option>
+              <option value="Women">Women's Department</option>
+              <option value="Kids">Kids' Department</option>
+            </select>
+          </div>
+          <div>
+            <label className="dashboard-label">Category</label>
+            <select value={form.categoryName} onChange={(e) => setForm({ ...form, categoryName: e.target.value })} className="auth-input-element">
+              {form.segment === 'Men' && (
+                <>
+                  <option value="T-Shirts">T-Shirts</option>
+                  <option value="Shirts">Shirts</option>
+                  <option value="Jackets">Jackets</option>
+                  <option value="Jeans">Jeans</option>
+                  <option value="Trousers">Trousers</option>
+                  <option value="Shoes">Shoes</option>
+                  <option value="Accessories">Accessories</option>
+                </>
+              )}
+              {form.segment === 'Women' && (
+                <>
+                  <option value="Dresses">Dresses</option>
+                  <option value="Skirts">Skirts</option>
+                  <option value="Blouses">Blouses</option>
+                  <option value="T-Shirts">T-Shirts</option>
+                  <option value="Shirts">Shirts</option>
+                  <option value="Jackets">Jackets</option>
+                  <option value="Jeans">Jeans</option>
+                  <option value="Trousers">Trousers</option>
+                  <option value="Shoes">Shoes</option>
+                  <option value="Accessories">Accessories</option>
+                </>
+              )}
+              {form.segment === 'Kids' && (
+                <>
+                  <option value="T-Shirts">T-Shirts</option>
+                  <option value="Shirts">Shirts</option>
+                  <option value="Dresses">Dresses</option>
+                  <option value="Jackets">Jackets</option>
+                  <option value="Jeans">Jeans</option>
+                  <option value="Trousers">Trousers</option>
+                </>
+              )}
+            </select>
+          </div>
+          <div>
+            <label className="dashboard-label">Price (LKR)</label>
+            <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="8500" type="number" min="0" step="0.01" className="auth-input-element" />
+          </div>
+          <div>
+            <label className="dashboard-label">Discount % (Optional)</label>
+            <input value={form.discountPercentage} onChange={(e) => setForm({ ...form, discountPercentage: e.target.value })} placeholder="0" type="number" min="0" max="100" className="auth-input-element" />
+          </div>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label className="dashboard-label">Editorial Description</label>
+            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Artisan crafted tailored garment with breathable texture..." className="auth-input-element" style={{ minHeight: 80, padding: 12, resize: 'vertical' }} />
+          </div>
 
-          {/* Image upload */}
-          <div style={{ gridColumn: 'span 2' }}>
-            <label style={{ display: 'block', fontWeight: 700, marginBottom: 10, color: '#1a0a2e' }}>Upload Images</label>
+          {/* Image Upload Area */}
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label className="dashboard-label">Product Imagery</label>
             <input
               type="file" accept="image/*" multiple disabled={uploadingImages}
-              style={{ padding: '10px', border: '2px dashed #e5e7eb', borderRadius: 12, width: '100%', background: '#f8f4ff', cursor: 'pointer' }}
+              style={{ padding: '12px', border: '2px dashed var(--border)', borderRadius: 14, width: '100%', background: 'var(--panel-soft)', cursor: 'pointer' }}
               onChange={async (e) => {
                 const files = Array.from(e.target.files || []);
                 if (!files.length) return;
@@ -1074,12 +1327,12 @@ export function AdminCatalogPage() {
                 } finally { setUploadingImages(false); }
               }}
             />
-            {uploadingImages && <div style={{ color: '#e91e8c', fontSize: '0.88rem', marginTop: 8 }}>⏳ Uploading images…</div>}
+            {uploadingImages && <div style={{ color: 'var(--accent)', fontSize: '0.84rem', marginTop: 8 }}>⏳ Uploading high-res images…</div>}
             {imageUrls.length > 0 && (
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
                 {imageUrls.map((url, idx) => (
                   <div key={url + idx} style={{ position: 'relative' }}>
-                    <img src={url} alt={`preview-${idx}`} style={{ width: 90, height: 90, objectFit: 'cover', borderRadius: 10, border: '2px solid #e5e7eb' }} />
+                    <img src={url} alt={`preview-${idx}`} style={{ width: 80, height: 100, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--border)' }} />
                     <button
                       type="button"
                       onClick={() => setImageUrls((prev) => prev.filter((_, i) => i !== idx))}
@@ -1092,24 +1345,26 @@ export function AdminCatalogPage() {
           </div>
         </div>
 
-        {/* Size & Color variants */}
-        <div style={{ marginTop: 20, border: '1.5px solid #e5e7eb', borderRadius: 14, padding: 18, background: '#fafafa' }}>
+        {/* Size & Color Matrix */}
+        <div style={{ marginTop: 20, border: '1px solid var(--border)', borderRadius: 16, padding: 18, background: 'var(--panel-soft)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <h4 style={{ margin: 0, color: '#1a0a2e', fontWeight: 700 }}>Size & Color Stock</h4>
-            <button type="button" style={s.secondaryBtn} onClick={addVariantSize}>+ Add size</button>
+            <h4 style={{ margin: 0, color: 'var(--primary)', fontWeight: 800 }}>Size &amp; Color Variants</h4>
+            <button type="button" className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem' }} onClick={addVariantSize}>
+              + Add Size Group
+            </button>
           </div>
           <div style={{ display: 'grid', gap: 12 }}>
             {variantRows.map((row, sizeIndex) => (
-              <div key={`size-${sizeIndex}`} style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 14, background: '#fff' }}>
+              <div key={`size-${sizeIndex}`} style={{ border: '1px solid var(--border)', borderRadius: 14, padding: 14, background: 'var(--panel)' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 10, marginBottom: 12 }}>
-                  <input value={row.size} onChange={(e) => updateVariantSize(sizeIndex, e.target.value)} placeholder="Size (e.g. S, M, L, XL)" style={s.input} />
-                  <button type="button" style={s.secondaryBtn} onClick={() => addVariantColor(sizeIndex)}>+ Color</button>
+                  <input value={row.size} onChange={(e) => updateVariantSize(sizeIndex, e.target.value)} placeholder="Size (e.g. S, M, L, XL)" className="auth-input-element" />
+                  <button type="button" className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '0.78rem' }} onClick={() => addVariantColor(sizeIndex)}>+ Color</button>
                 </div>
                 <div style={{ display: 'grid', gap: 10 }}>
                   {row.colors.map((colorRow, colorIndex) => (
                     <div key={`color-${sizeIndex}-${colorIndex}`} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                      <input value={colorRow.color} onChange={(e) => updateVariantColor(sizeIndex, colorIndex, e.target.value)} placeholder="Color (e.g. Red, Navy)" style={s.input} />
-                      <input value={colorRow.stock} onChange={(e) => updateVariantStock(sizeIndex, colorIndex, e.target.value)} placeholder="Stock qty" type="number" min="0" style={s.input} />
+                      <input value={colorRow.color} onChange={(e) => updateVariantColor(sizeIndex, colorIndex, e.target.value)} placeholder="Color (e.g. Terracotta, Sand, Olive)" className="auth-input-element" />
+                      <input value={colorRow.stock} onChange={(e) => updateVariantStock(sizeIndex, colorIndex, e.target.value)} placeholder="Stock qty" type="number" min="0" className="auth-input-element" />
                     </div>
                   ))}
                 </div>
@@ -1118,42 +1373,40 @@ export function AdminCatalogPage() {
           </div>
         </div>
 
-        <div style={{ marginTop: 18 }}>
-          <button type="button" style={s.primaryBtn} onClick={handleCreate} disabled={submitting}>
-            {submitting ? '⏳ Saving…' : '+ Add Product'}
+        <div style={{ marginTop: 20 }}>
+          <button type="button" className="btn btn-primary" style={{ padding: '12px 28px', fontSize: '0.92rem' }} onClick={handleCreate} disabled={submitting}>
+            {submitting ? '⏳ Publishing Product…' : '+ Publish Product to Store'}
           </button>
         </div>
-      </section>
+      </div>
 
-      {/* ── Product list ── */}
-      <section style={{ ...s.card, marginTop: 24 }}>
+      {/* ── Product List ── */}
+      <div className="dashboard-section-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
-          <h3 style={s.cardTitle}>Catalog Inventory ({productCount})</h3>
+          <h3 className="dashboard-card-title" style={{ margin: 0 }}>Inventory Catalog ({filteredInventory.length})</h3>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            <div className="auth-input-wrapper" style={{ width: 220 }}>
-              <span className="auth-input-icon"><Search size={14} /></span>
+            <div className="monic-order-search-box">
+              <Search size={14} color="var(--muted)" />
               <input
                 type="text"
                 placeholder="Search styles..."
                 value={inventorySearch}
                 onChange={(e) => setInventorySearch(e.target.value)}
-                className="auth-input-element"
-                style={{ minHeight: 36, paddingLeft: 34, fontSize: '0.84rem' }}
+                className="monic-order-search-input"
               />
             </div>
-            <button type="button" style={s.secondaryBtn} onClick={loadCatalog}>↻ Refresh</button>
+            <button type="button" className="btn btn-secondary" style={{ padding: '7px 14px', fontSize: '0.8rem' }} onClick={loadCatalog}>↻ Refresh</button>
           </div>
         </div>
 
         {/* Inventory Segment Tabs */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
+        <div className="monic-order-filter-pills" style={{ marginBottom: 18 }}>
           {(['All', 'Men', 'Women', 'Kids'] as const).map((seg) => (
             <button
               key={seg}
               type="button"
-              className={`tag ${inventorySegment === seg ? 'active' : ''}`}
+              className={`monic-order-filter-btn ${inventorySegment === seg ? 'active' : ''}`}
               onClick={() => setInventorySegment(seg)}
-              style={{ padding: '6px 14px', fontSize: '0.82rem', fontWeight: 700 }}
             >
               {seg === 'All' ? '🌟 All Departments' : `${seg}'s`} ({seg === 'All' ? products.length : products.filter((p) => String((p as any).segment || '').toLowerCase() === seg.toLowerCase()).length})
             </button>
@@ -1161,7 +1414,10 @@ export function AdminCatalogPage() {
         </div>
 
         {loading ? (
-          <div style={s.emptyBox}>Loading catalog…</div>
+          <div style={{ textAlign: 'center', padding: '48px 0' }}>
+            <div className="loader" style={{ margin: '0 auto 12px' }} />
+            <p style={{ color: 'var(--muted)', fontWeight: 600 }}>Loading catalog…</p>
+          </div>
         ) : filteredInventory.length ? (
           <div style={{ display: 'grid', gap: 14 }}>
             {filteredInventory.map((product) => {
@@ -1171,63 +1427,62 @@ export function AdminCatalogPage() {
               const discount  = Math.round(Number(product.discount_percentage || 0));
 
               return (
-                <div key={product.id} style={s.productRow}>
-                  <div style={{ width: 80, height: 80, flexShrink: 0, borderRadius: 10, overflow: 'hidden', background: '#f3f4f6' }}>
-                    {thumbnail
-                      ? <img src={thumbnail} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', color: '#b5aac7', fontSize: '1.5rem' }}>👕</div>}
+                <div key={product.id} className="monic-order-card" style={{ display: 'flex', gap: 18, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                  <div style={{ width: 84, height: 104, flexShrink: 0, borderRadius: 12, overflow: 'hidden', background: 'var(--panel-soft)', border: '1px solid var(--border)' }}>
+                    {thumbnail ? (
+                      <img src={thumbnail} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', color: 'var(--muted)', fontSize: '1.5rem' }}>👕</div>
+                    )}
                   </div>
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ flex: 1, minWidth: 240 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                       <div>
-                        <strong style={{ fontSize: '0.97rem', color: '#1a0a2e' }}>{product.name}</strong>
-                        <div style={s.muted}>{product.brand || '—'}</div>
-                        <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          <span style={{ ...s.badge, background: '#ede9fe', color: '#5b21b6', fontWeight: 800 }}>{(product as any).segment || 'Women'}</span>
-                          <span style={{ ...s.badge, background: '#f0fdf4', color: '#166534' }}>{product.category_name || '—'}</span>
+                        <strong style={{ fontSize: '1.02rem', color: 'var(--primary)' }}>{product.name}</strong>
+                        <div style={{ color: 'var(--muted)', fontSize: '0.8rem', marginTop: 2 }}>{product.brand || 'Clothify Boutique'}</div>
+                        <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          <span className="badge badge-purple">{(product as any).segment || 'Women'}</span>
+                          <span className="badge badge-green">{product.category_name || 'Garment'}</span>
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1a0a2e' }}>LKR {price.toLocaleString()}</div>
-                        {discount > 0
-                          ? <div style={{ color: '#e91e8c', fontSize: '0.85rem' }}>-{discount}% · <span style={{ color: '#7c6f8e', textDecoration: 'line-through' }}>LKR {oldPrice.toLocaleString()}</span></div>
-                          : <div style={{ color: '#b5aac7', fontSize: '0.82rem' }}>No discount</div>}
+                        <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--primary)' }}>LKR {price.toLocaleString()}</div>
+                        {discount > 0 ? (
+                          <div style={{ color: 'var(--accent)', fontSize: '0.82rem', fontWeight: 700 }}>
+                            -{discount}% · <span style={{ color: 'var(--muted)', textDecoration: 'line-through' }}>LKR {oldPrice.toLocaleString()}</span>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
 
-                    {/* Variants */}
-                    {product.variants?.length ? (
-                      <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {(() => {
-                          const grouped: Record<string, any[]> = {};
-                          (product.variants || []).forEach((v: any) => {
-                            const size = String(v.size || 'N/A');
-                            grouped[size] = grouped[size] || [];
-                            grouped[size].push(v);
-                          });
-                          return Object.keys(grouped).map((sizeKey) => (
-                            <span key={sizeKey} style={{ background: '#f8f4ff', border: '1px solid #e0d9f0', borderRadius: 8, padding: '4px 10px', fontSize: '0.78rem', fontWeight: 600, color: '#4c3a8a' }}>
-                              {sizeKey}: {grouped[sizeKey].map((v: any) => `${v.color}(${v.stock_quantity ?? 0})`).join(', ')}
-                            </span>
-                          ));
-                        })()}
+                    {/* Price Update & Delete Row */}
+                    <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--muted)' }}>Price (LKR):</span>
+                        <input
+                          value={priceInputs[product.id] ?? String(Number(product.final_price || product.price || 0))}
+                          onChange={(e) => setPriceInputs((prev) => ({ ...prev, [product.id]: e.target.value }))}
+                          type="number" min="0"
+                          className="auth-input-element"
+                          style={{ width: 110, minHeight: 34, padding: '4px 10px', fontSize: '0.86rem' }}
+                        />
                       </div>
-                    ) : null}
-
-                    {/* Price update & delete */}
-                    <div style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <input
-                        value={priceInputs[product.id] ?? String(Number(product.final_price || product.price || 0))}
-                        onChange={(e) => setPriceInputs((prev) => ({ ...prev, [product.id]: e.target.value }))}
-                        type="number" min="0"
-                        style={{ ...s.input, width: 120 }}
-                      />
-                      <button type="button" style={s.confirmBtn} onClick={() => handlePriceUpdate(product.id)} disabled={updatingPriceId === product.id}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ padding: '6px 14px', fontSize: '0.78rem' }}
+                        onClick={() => handlePriceUpdate(product.id)}
+                        disabled={updatingPriceId === product.id}
+                      >
                         {updatingPriceId === product.id ? '…' : 'Update Price'}
                       </button>
-                      <button type="button" style={s.deleteBtn} onClick={() => handleDelete(product.id)}>
-                        <Trash2 size={14} /> Delete
+                      <button
+                        type="button"
+                        style={{ background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 999, padding: '6px 14px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                        onClick={() => handleDelete(product.id)}
+                      >
+                        <Trash2 size={13} /> Delete
                       </button>
                     </div>
                   </div>
@@ -1236,222 +1491,360 @@ export function AdminCatalogPage() {
             })}
           </div>
         ) : (
-          <div style={s.emptyBox}>No products match the selected department or search filter.</div>
+          <div className="dashboard-empty-box">
+            <ShoppingBag size={36} style={{ color: 'var(--muted)', marginBottom: 10 }} />
+            <h3 style={{ margin: '0 0 6px', color: 'var(--primary)' }}>No Products Match</h3>
+            <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.86rem' }}>Try clearing your search query or department filter.</p>
+          </div>
         )}
-      </section>
+      </div>
     </AdminShell>
   );
 }
 
-/* ────────── Styles ────────── */
-const s = {
-  pageShell: {
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, #f8f4ff 0%, #f0e6ff 100%)',
-    padding: '28px 20px 60px',
-  } as React.CSSProperties,
-  container: {
-    maxWidth: 1300,
-    margin: '0 auto',
-    display: 'flex',
-    gap: 26,
-    alignItems: 'flex-start',
-  } as React.CSSProperties,
+/* ────────── Reviews & Feedback Moderation Page ────────── */
+export function AdminReviewsPage() {
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [ratingFilter, setRatingFilter] = useState<string>('all');
+  const [featuredFilter, setFeaturedFilter] = useState<string>('all');
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  /* Sidebar */
-  sidebar: {
-    width: 250,
-    flexShrink: 0,
-    background: 'linear-gradient(180deg, #1a0a2e 0%, #2d1b69 60%, #3d2480 100%)',
-    borderRadius: 22,
-    padding: '22px 16px',
-    boxShadow: '0 20px 50px rgba(26,10,46,0.28)',
-    position: 'sticky',
-    top: 24,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 0,
-  } as React.CSSProperties,
-  brandWrap: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 } as React.CSSProperties,
-  brandBadge: {
-    width: 42, height: 42, borderRadius: 12,
-    overflow: 'hidden',
-    background: 'linear-gradient(135deg,#e91e8c,#ff6b35)',
-    flexShrink: 0,
-    boxShadow: '0 4px 14px rgba(233,30,140,0.35)',
-  } as React.CSSProperties,
-  sideLabel: { margin: 0, fontSize: 10, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em' } as React.CSSProperties,
-  sideTitle: { fontSize: '1.1rem', color: 'white', fontWeight: 800, letterSpacing: '-0.02em' } as React.CSSProperties,
-  navList: { display: 'flex', flexDirection: 'column', gap: 6, flex: 1 } as React.CSSProperties,
-  navItem: {
-    display: 'flex', alignItems: 'center', gap: 12,
-    padding: '11px 14px', borderRadius: 12,
-    color: 'rgba(255,255,255,0.65)', fontWeight: 600, fontSize: '0.92rem',
-    transition: 'all 0.2s ease',
-  } as React.CSSProperties,
-  navItemActive: {
-    background: 'rgba(233,30,140,0.22)',
-    color: 'white',
-    boxShadow: '0 0 0 1px rgba(233,30,140,0.4)',
-  } as React.CSSProperties,
-  sideFooter: { marginTop: 24, borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 18 } as React.CSSProperties,
-  visitStoreBtn: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-    background: 'rgba(255,255,255,0.1)',
-    color: 'rgba(255,255,255,0.8)',
-    borderRadius: 12, padding: '11px 14px',
-    fontWeight: 700, fontSize: '0.88rem',
-    transition: 'all 0.2s',
-    textDecoration: 'none',
-    border: '1px solid rgba(255,255,255,0.15)',
-  } as React.CSSProperties,
+  const loadReviews = async () => {
+    setLoading(true);
+    try {
+      const data = await adminService.getAllReviews();
+      setReviews(data || []);
+    } catch (err) {
+      console.error('Failed to load reviews:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  /* Main panel */
-  mainPanel: {
-    flex: 1, background: '#fff',
-    borderRadius: 22,
-    boxShadow: '0 8px 32px rgba(26,10,46,0.08)',
-    padding: '28px 32px 36px',
-    minWidth: 0,
-  } as React.CSSProperties,
-  header: {
-    display: 'flex', justifyContent: 'space-between',
-    gap: 16, alignItems: 'flex-start', marginBottom: 28,
-    paddingBottom: 24, borderBottom: '1px solid #f0e6ff',
-  } as React.CSSProperties,
-  eyebrow: {
-    margin: 0, color: '#e91e8c',
-    textTransform: 'uppercase', fontWeight: 800,
-    letterSpacing: '0.1em', fontSize: '0.72rem',
-  } as React.CSSProperties,
-  title: { margin: '8px 0 0', fontSize: 'clamp(1.8rem,3vw,2.4rem)', color: '#1a0a2e', fontWeight: 800, letterSpacing: '-0.03em' } as React.CSSProperties,
-  subtitle: { margin: '6px 0 0', color: '#7c6f8e', fontSize: '0.95rem' } as React.CSSProperties,
-  headerActions: { display: 'flex', gap: 12, alignItems: 'center', flexShrink: 0 } as React.CSSProperties,
-  iconBtn: {
-    width: 40, height: 40, borderRadius: 12,
-    border: '1.5px solid #f0e6ff',
-    background: '#f8f4ff', display: 'grid', placeItems: 'center',
-    cursor: 'pointer', color: '#4c3a8a', transition: 'all 0.2s',
-  } as React.CSSProperties,
-  logoutBtn: {
-    border: 'none', borderRadius: 12,
-    background: 'linear-gradient(135deg,#1a0a2e,#2d1b69)',
-    color: '#fff', fontWeight: 700, padding: '10px 18px',
-    cursor: 'pointer', fontSize: '0.9rem',
-    boxShadow: '0 4px 14px rgba(26,10,46,0.22)',
-    transition: 'all 0.2s',
-  } as React.CSSProperties,
+  useEffect(() => {
+    loadReviews();
+  }, []);
 
-  /* Stats */
-  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, marginBottom: 24 } as React.CSSProperties,
-  statCard: { borderRadius: 18, padding: '22px 20px', position: 'relative', overflow: 'hidden' } as React.CSSProperties,
-  statIcon: { width: 42, height: 42, borderRadius: 12, display: 'grid', placeItems: 'center', marginBottom: 20 } as React.CSSProperties,
-  statValue: { fontSize: '2.2rem', fontWeight: 900, color: 'white', lineHeight: 1, marginBottom: 6 } as React.CSSProperties,
-  statTitle: { fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.7)', marginBottom: 4 } as React.CSSProperties,
-  statSubtitle: { color: 'rgba(255,255,255,0.55)', fontSize: '0.82rem' } as React.CSSProperties,
+  const handleToggleFeatured = async (review: any) => {
+    setActionLoadingId(review.id);
+    const newStatus = !review.isFeatured;
 
-  /* Lower grid */
-  lowerGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 18 } as React.CSSProperties,
+    if (newStatus && reviews.filter((r) => r.isFeatured && r.id !== review.id).length >= 3) {
+      alert('You can select a maximum of 3 reviews to feature on the Home Page. Please unfeature one before selecting another.');
+      setActionLoadingId(null);
+      return;
+    }
 
-  /* Cards */
-  card: { background: '#faf8ff', border: '1.5px solid #f0e6ff', borderRadius: 18, padding: '22px 20px' } as React.CSSProperties,
-  paymentCard: { background: '#fff', border: '1.5px solid #f0e6ff', borderRadius: 18, padding: '22px 20px', boxShadow: '0 4px 18px rgba(26,10,46,0.06)' } as React.CSSProperties,
-  cardTitle: { margin: '0 0 16px', fontSize: '1.1rem', color: '#1a0a2e', fontWeight: 700 } as React.CSSProperties,
+    try {
+      await adminService.toggleFeaturedReview(review.id, newStatus);
+      setReviews((prev) =>
+        prev.map((r) => (r.id === review.id ? { ...r, isFeatured: newStatus } : r))
+      );
+      setToastMsg(
+        newStatus
+          ? `Review by "${review.userName}" is now featured on the Home Page!`
+          : `Review by "${review.userName}" removed from Home Page.`
+      );
+      setTimeout(() => setToastMsg(null), 3500);
+    } catch (err: any) {
+      alert(err?.response?.data?.message || err?.message || 'Failed to update feature status');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
-  /* Profile */
-  profileGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 14 } as React.CSSProperties,
-  profileItem: { display: 'flex', flexDirection: 'column', gap: 4 } as React.CSSProperties,
+  const handleDeleteReview = async (reviewId: string, userName: string) => {
+    if (!window.confirm(`Are you sure you want to delete the review from ${userName}?`)) {
+      return;
+    }
+    setActionLoadingId(reviewId);
+    try {
+      await adminService.deleteReview(reviewId);
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      setToastMsg('Review deleted successfully.');
+      setTimeout(() => setToastMsg(null), 3000);
+    } catch (err: any) {
+      alert(err?.response?.data?.message || err?.message || 'Failed to delete review');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
-  /* Quick actions */
-  quickActions: { display: 'flex', flexWrap: 'wrap', gap: 10 } as React.CSSProperties,
-  primaryBtn: {
-    background: 'linear-gradient(135deg,#e91e8c,#ff6b35)',
-    color: '#fff', borderRadius: 12,
-    padding: '11px 20px', fontWeight: 700, textDecoration: 'none',
-    border: 'none', cursor: 'pointer', fontSize: '0.9rem',
-    boxShadow: '0 4px 14px rgba(233,30,140,0.3)',
-    transition: 'all 0.22s ease',
-    display: 'inline-flex', alignItems: 'center', gap: 8,
-  } as React.CSSProperties,
-  secondaryBtn: {
-    background: '#f8f4ff', color: '#4c3a8a',
-    borderRadius: 12, padding: '11px 16px',
-    fontWeight: 700, textDecoration: 'none',
-    border: '1.5px solid #e0d9f0', cursor: 'pointer',
-    fontSize: '0.88rem', transition: 'all 0.2s',
-    display: 'inline-flex', alignItems: 'center', gap: 8,
-  } as React.CSSProperties,
-  confirmBtn: {
-    background: 'linear-gradient(135deg,#00d4aa,#00b4d8)',
-    color: '#fff', border: 'none', borderRadius: 10,
-    padding: '8px 14px', fontWeight: 700, cursor: 'pointer',
-    fontSize: '0.85rem', boxShadow: '0 3px 10px rgba(0,212,170,0.3)',
-    transition: 'all 0.2s',
-  } as React.CSSProperties,
-  confirmBtnLg: {
-    background: 'linear-gradient(135deg,#00d4aa,#00b4d8)',
-    color: '#fff', border: 'none', borderRadius: 12,
-    padding: '11px 20px', fontWeight: 700, cursor: 'pointer',
-    fontSize: '0.93rem', boxShadow: '0 4px 14px rgba(0,212,170,0.3)',
-    transition: 'all 0.2s',
-  } as React.CSSProperties,
-  rejectBtn: {
-    background: '#fee2e2', color: '#991b1b', border: 'none',
-    borderRadius: 10, padding: '8px 14px', fontWeight: 700,
-    cursor: 'pointer', fontSize: '0.85rem', transition: 'all 0.2s',
-  } as React.CSSProperties,
-  rejectBtnLg: {
-    background: '#fee2e2', color: '#991b1b', border: 'none',
-    borderRadius: 12, padding: '11px 20px', fontWeight: 700,
-    cursor: 'pointer', fontSize: '0.93rem', transition: 'all 0.2s',
-  } as React.CSSProperties,
-  deleteBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: 6,
-    background: '#fee2e2', color: '#991b1b', border: 'none',
-    borderRadius: 10, padding: '8px 14px', fontWeight: 700,
-    cursor: 'pointer', fontSize: '0.85rem', transition: 'all 0.2s',
-  } as React.CSSProperties,
+  const filteredReviews = useMemo(() => {
+    return reviews.filter((r) => {
+      if (ratingFilter !== 'all' && r.rating !== Number(ratingFilter)) {
+        return false;
+      }
+      if (featuredFilter === 'featured' && !r.isFeatured) {
+        return false;
+      }
+      if (featuredFilter === 'not_featured' && r.isFeatured) {
+        return false;
+      }
+      if (search) {
+        const query = search.toLowerCase();
+        const matchName = String(r.userName || '').toLowerCase().includes(query);
+        const matchEmail = String(r.userEmail || '').toLowerCase().includes(query);
+        const matchText = String(r.reviewText || '').toLowerCase().includes(query);
+        const matchProd = String(r.productName || '').toLowerCase().includes(query);
+        if (!matchName && !matchEmail && !matchText && !matchProd) return false;
+      }
+      return true;
+    });
+  }, [reviews, ratingFilter, featuredFilter, search]);
 
-  /* Lists */
-  listWrap: { display: 'flex', flexDirection: 'column', gap: 10 } as React.CSSProperties,
-  listItem: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '12px 16px', borderRadius: 12,
-    background: '#fff', border: '1px solid #f0e6ff',
-    transition: 'box-shadow 0.2s',
-  } as React.CSSProperties,
-  avatarChip: {
-    width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-    background: 'linear-gradient(135deg,#1a0a2e,#2d1b69)',
-    color: 'white', fontWeight: 800, fontSize: '0.75rem',
-    display: 'grid', placeItems: 'center',
-  } as React.CSSProperties,
+  const featuredCount = reviews.filter((r) => r.isFeatured).length;
+  const avgRating = reviews.length > 0
+    ? (reviews.reduce((acc, r) => acc + (r.rating || 0), 0) / reviews.length).toFixed(1)
+    : '5.0';
 
-  /* Table */
-  tableWrap: { overflowX: 'auto', borderRadius: 14, border: '1.5px solid #f0e6ff' } as React.CSSProperties,
+  return (
+    <AdminShell
+      title="Customer Reviews & Feedback Curation"
+      subtitle="Inspect customer ratings, moderate feedback, and choose which customer reviews are showcased on the Home Page."
+    >
+      <div className="dashboard-content-stack">
+        {/* KPI Row */}
+        <div className="dashboard-metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+          <div className="dashboard-metric-card">
+            <span className="dashboard-metric-label">Total Feedbacks</span>
+            <span className="dashboard-metric-val">{reviews.length}</span>
+            <span className="dashboard-metric-sub">Across products & store</span>
+          </div>
+          <div className="dashboard-metric-card">
+            <span className="dashboard-metric-label">Featured on Home (Max 3)</span>
+            <span className="dashboard-metric-val" style={{ color: 'var(--accent)' }}>{featuredCount} / 3</span>
+            <span className="dashboard-metric-sub">Displaying on homepage</span>
+          </div>
+          <div className="dashboard-metric-card">
+            <span className="dashboard-metric-label">Average Customer Score</span>
+            <span className="dashboard-metric-val" style={{ color: '#166534' }}>★ {avgRating}</span>
+            <span className="dashboard-metric-sub">Out of 5.0 stars</span>
+          </div>
+          <div className="dashboard-metric-card">
+            <span className="dashboard-metric-label">5-Star Testimonials</span>
+            <span className="dashboard-metric-val" style={{ color: '#f59e0b' }}>
+              {reviews.filter((r) => r.rating === 5).length}
+            </span>
+            <span className="dashboard-metric-sub">Top tier satisfaction</span>
+          </div>
+        </div>
 
-  /* Misc */
-  muted: { color: '#7c6f8e', fontSize: '0.85rem', marginTop: 2 } as React.CSSProperties,
-  label: { display: 'block', color: '#b5aac7', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 } as React.CSSProperties,
-  badge: { display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: 999, fontSize: '0.72rem', fontWeight: 700 } as React.CSSProperties,
-  badgeGreen: { background: '#dcfce7', color: '#166534' } as React.CSSProperties,
-  emptyBox: {
-    padding: '32px 24px', borderRadius: 14,
-    background: '#f8f4ff', border: '2px dashed #e0d9f0',
-    color: '#7c6f8e', textAlign: 'center', fontSize: '0.95rem',
-  } as React.CSSProperties,
-  input: {
-    width: '100%', padding: '11px 14px', borderRadius: 11,
-    border: '1.5px solid #e0d9f0', background: '#fff',
-    fontSize: '0.93rem', boxSizing: 'border-box' as const,
-    color: '#1a0a2e', transition: 'border-color 0.2s',
-    outline: 'none',
-  } as React.CSSProperties,
-  formGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 14 } as React.CSSProperties,
-  productRow: {
-    display: 'flex', gap: 16, alignItems: 'flex-start',
-    background: '#fff', border: '1.5px solid #f0e6ff',
-    padding: '16px 18px', borderRadius: 14,
-    transition: 'box-shadow 0.2s, border-color 0.2s',
-  } as React.CSSProperties,
-};
+        {toastMsg && (
+          <div style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac', borderRadius: 14, padding: '12px 18px', fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <CheckCircle2 size={18} /> {toastMsg}
+          </div>
+        )}
+
+        {/* Filters and search bar */}
+        <div className="dashboard-section-card" style={{ padding: '16px 20px' }}>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: 10, flex: 1, minWidth: 260 }}>
+              <div className="auth-input-wrapper" style={{ flex: 1 }}>
+                <span className="auth-input-icon"><Search size={15} /></span>
+                <input
+                  type="text"
+                  placeholder="Search reviews by customer, comment, or garment..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="auth-input-element"
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <select
+                value={featuredFilter}
+                onChange={(e) => setFeaturedFilter(e.target.value)}
+                className="auth-input-element"
+                style={{ width: 'auto', padding: '8px 14px', fontSize: '0.84rem' }}
+              >
+                <option value="all">All Visibility</option>
+                <option value="featured">Featured on Home Only</option>
+                <option value="not_featured">Not Featured</option>
+              </select>
+
+              <select
+                value={ratingFilter}
+                onChange={(e) => setRatingFilter(e.target.value)}
+                className="auth-input-element"
+                style={{ width: 'auto', padding: '8px 14px', fontSize: '0.84rem' }}
+              >
+                <option value="all">All Star Ratings</option>
+                <option value="5">5 Stars Only</option>
+                <option value="4">4 Stars Only</option>
+                <option value="3">3 Stars Only</option>
+                <option value="2">2 Stars Only</option>
+                <option value="1">1 Star Only</option>
+              </select>
+
+              <button
+                type="button"
+                onClick={loadReviews}
+                className="btn btn-secondary"
+                style={{ padding: '8px 14px', fontSize: '0.84rem' }}
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Reviews List */}
+        <div className="dashboard-section-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 className="dashboard-card-title" style={{ margin: 0 }}>
+              Customer Feedbacks ({filteredReviews.length})
+            </h3>
+            <span style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
+              Click <strong>"Feature on Home"</strong> to choose reviews shown on the Home Page customer review section.
+            </span>
+          </div>
+
+          {loading ? (
+            <div style={{ padding: '50px 0', textAlign: 'center' }}>
+              <div className="loader" style={{ margin: '0 auto 14px' }} />
+              <p style={{ color: 'var(--muted)', fontWeight: 600 }}>Loading customer feedback...</p>
+            </div>
+          ) : filteredReviews.length === 0 ? (
+            <div className="dashboard-empty-box">
+              <MessageSquare size={36} style={{ color: 'var(--muted)', marginBottom: 10 }} />
+              <h3 style={{ margin: '0 0 6px', color: 'var(--primary)' }}>No Reviews Found</h3>
+              <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.86rem' }}>
+                No feedback records match your current filter criteria.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: 14 }}>
+              {filteredReviews.map((rev) => {
+                const isWorking = actionLoadingId === rev.id;
+                return (
+                  <div
+                    key={rev.id}
+                    style={{
+                      padding: '18px 20px',
+                      borderRadius: 16,
+                      border: `1.5px solid ${rev.isFeatured ? 'rgba(196, 75, 43, 0.35)' : 'var(--border)'}`,
+                      background: rev.isFeatured ? 'rgba(196, 75, 43, 0.03)' : 'var(--panel)',
+                      boxShadow: rev.isFeatured ? '0 4px 18px rgba(196, 75, 43, 0.08)' : 'none',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 10 }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <strong style={{ fontSize: '1rem', color: 'var(--primary)' }}>
+                            {rev.userName}
+                          </strong>
+                          {rev.userEmail && (
+                            <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
+                              ({rev.userEmail})
+                            </span>
+                          )}
+                          {rev.isVerified && (
+                            <span className="badge badge-green" style={{ fontSize: '0.72rem' }}>
+                              ✓ Verified Buyer
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ display: 'flex', gap: 2 }}>
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star
+                                key={i}
+                                size={14}
+                                fill={i < rev.rating ? '#F59E0B' : 'none'}
+                                color={i < rev.rating ? '#F59E0B' : '#d1d5db'}
+                              />
+                            ))}
+                          </div>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+                            · Focus: <strong>{rev.productName || rev.feedbackType}</strong>
+                          </span>
+                          <span style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>
+                            · {new Date(rev.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleFeatured(rev)}
+                          disabled={isWorking}
+                          style={{
+                            padding: '7px 16px',
+                            borderRadius: 999,
+                            fontSize: '0.8rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            border: rev.isFeatured ? '1px solid #166534' : '1px solid var(--border)',
+                            background: rev.isFeatured ? '#166534' : 'var(--panel-soft)',
+                            color: rev.isFeatured ? '#ffffff' : 'var(--primary)',
+                            boxShadow: rev.isFeatured ? '0 2px 8px rgba(22, 101, 52, 0.25)' : 'none',
+                          }}
+                        >
+                          {rev.isFeatured ? (
+                            <>
+                              ★ Featured on Home Page
+                            </>
+                          ) : (
+                            <>
+                              ☆ Feature on Home
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteReview(rev.id, rev.userName)}
+                          disabled={isWorking}
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            background: '#fee2e2',
+                            color: '#991b1b',
+                            border: 'none',
+                            display: 'grid',
+                            placeItems: 'center',
+                            cursor: 'pointer',
+                          }}
+                          title="Delete review"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Headline */}
+                    {rev.title && (
+                      <h4 style={{ margin: '0 0 6px', fontSize: '0.94rem', color: 'var(--primary)', fontWeight: 700 }}>
+                        {rev.title}
+                      </h4>
+                    )}
+
+                    {/* Comment */}
+                    <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text)', lineHeight: 1.6, background: 'var(--panel-soft)', padding: '10px 14px', borderRadius: 10 }}>
+                      "{rev.reviewText}"
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </AdminShell>
+  );
+}
+
+
+
