@@ -10,6 +10,7 @@ import {
   AdminDashboard,
   AdminOrdersPage,
   AdminPaymentsPage,
+  AdminReviewsPage,
 } from '../pages/admin/AdminDashboard';
 import {
   CustomerCartPage,
@@ -70,6 +71,14 @@ export function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <AdminCatalogPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/reviews"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminReviewsPage />
           </ProtectedRoute>
         }
       />

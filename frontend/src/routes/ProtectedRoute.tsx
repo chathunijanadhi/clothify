@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../services/auth.context';
+import { Loader } from '../components/common/Loader';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -12,7 +13,7 @@ export function ProtectedRoute({ children, allowedRoles = [] }: ProtectedRoutePr
   const location = useLocation();
 
   if (loading) {
-    return <div className="page-shell"><div className="container"><div className="loader">Loading...</div></div></div>;
+    return <Loader fullScreen label="Authenticating session..." />;
   }
 
   if (!user) {

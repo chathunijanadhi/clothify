@@ -7,14 +7,15 @@ import { AppRoutes } from './routes/AppRoutes';
 function App() {
   const location = useLocation();
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const isDashboardPage = location.pathname.startsWith('/customer') || location.pathname.startsWith('/admin');
 
   return (
     <div className="site-wrapper" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Navbar />
+      {!isAuthPage && <Navbar />}
       <main className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <AppRoutes />
       </main>
-      {!isAuthPage && <Footer />}
+      {!isAuthPage && !isDashboardPage && <Footer />}
       <MobileBottomNav />
     </div>
   );
