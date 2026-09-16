@@ -10,7 +10,12 @@ export interface WishlistItemRow {
   product_image?: string | null;
   price?: string;
   final_price?: string;
+  discount_percentage?: string;
+  segment?: string | null;
+  category_name?: string;
+  stock_quantity?: number;
   rating?: string;
+  review_count?: number;
 }
 
 export interface WishlistSummary {
@@ -41,8 +46,13 @@ export const getWishlistByUserId = async (userId: string): Promise<WishlistSumma
       wi.created_at,
       p.name AS product_name,
       p.price,
+      p.discount_percentage,
       p.final_price,
       p.rating,
+      p.review_count,
+      p.stock_quantity,
+      p.segment,
+      c.name AS category_name,
       (
         SELECT pi.image_url
         FROM product_images pi
@@ -52,6 +62,7 @@ export const getWishlistByUserId = async (userId: string): Promise<WishlistSumma
       ) AS product_image
     FROM wishlist_items wi
     INNER JOIN products p ON p.id = wi.product_id
+    LEFT JOIN categories c ON c.id = p.category_id
     WHERE wi.wishlist_id = $1
     ORDER BY wi.created_at DESC`,
     [wishlistRow.id]
