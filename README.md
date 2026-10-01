@@ -20,6 +20,10 @@ The frontend is built into the image, so changes to `VITE_*` values require rebu
 
 GitHub Actions runs on changes affecting the application or Docker setup in pushes and pull requests targeting `main`. Backend build/tests and frontend lint/build must pass before Docker image builds and Trivy scans. On pushes to `main`, passing images are pushed to GHCR with the commit SHA and `latest` tags. Set the GitHub Actions repository variables `VITE_API_URL` and `VITE_FIREBASE_*` to bake the intended public frontend configuration into those images. Deployment is intentionally a placeholder.
 
+### Temporary frontend audit exception
+
+The frontend production audit currently reports the high-severity [GHSA-m9gg-hp2v-232j](https://github.com/advisories/GHSA-m9gg-hp2v-232j) and the low-severity [GHSA-f596-whhp-79r4](https://github.com/advisories/GHSA-f596-whhp-79r4) through `firebase@12.19.0` → `@firebase/firestore@4.17.2` → `@grpc/grpc-js@1.9.16`. The latest Firebase release still requires `@grpc/grpc-js ~1.9.0`; the patched gRPC versions (`1.13.6` and `1.14.5`) are outside that range. The frontend currently uses Firebase Authentication, not Firestore, but the transitive package remains installed. This is a temporary accepted risk: the frontend CI audit blocks critical findings while retaining this high finding in `npm audit` output. Revisit the exception by **2026-11-01** and restore the high-severity gate once Firebase/Firestore publishes a compatible fix. No Firebase downgrade or dependency override is used.
+
 ```text
 Push / pull request to main
              |
