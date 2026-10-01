@@ -2,7 +2,6 @@
    Uses environment variables:
    CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 */
-import pool from '../config/database';
 import logger from '../utils/logger';
 
 // use require to avoid type package issues
