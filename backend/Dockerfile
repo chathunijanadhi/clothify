@@ -16,7 +16,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm install --global npm@11.21.0 \
+  && npm ci --omit=dev \
+  && npm cache clean --force
 
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --chown=node:node scripts ./scripts
