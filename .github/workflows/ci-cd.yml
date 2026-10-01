@@ -9,6 +9,8 @@ on:
       - ".dockerignore"
       - ".env.example"
       - "docker-compose.yml"
+      - "monitoring/**"
+      - "README.md"
       - ".github/workflows/ci-cd.yml"
   pull_request:
     branches: [main]
@@ -18,6 +20,8 @@ on:
       - ".dockerignore"
       - ".env.example"
       - "docker-compose.yml"
+      - "monitoring/**"
+      - "README.md"
       - ".github/workflows/ci-cd.yml"
 
 concurrency:
@@ -31,6 +35,28 @@ jobs:
   backend:
     name: Backend checks
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: clothify_ci
+          POSTGRES_USER: clothify_ci
+          POSTGRES_PASSWORD: clothify-ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U clothify_ci -d clothify_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: clothify_ci
+      DB_PASSWORD: clothify-ci-only
+      DB_DATABASE: clothify_ci
+      JWT_SECRET: clothify-ci-dummy-secret
+      LOG_LEVEL: silent
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -48,13 +74,26 @@ jobs:
         working-directory: backend
         run: npm ci
 
+      - name: Apply database migrations
+        working-directory: backend
+        run: npm run migrate
+
       - name: Build
         working-directory: backend
         run: npm run build
 
-      - name: Test
+      - name: Test with coverage
         working-directory: backend
-        run: npm test
+        run: npm run test:coverage
+
+      - name: Upload backend coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/coverage
+          if-no-files-found: ignore
+          retention-days: 14
 
   frontend:
     name: Frontend checks
@@ -84,6 +123,19 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      - name: Test with coverage
+        working-directory: frontend
+        run: npm run test:coverage
+
+      - name: Upload frontend coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
+          if-no-files-found: ignore
+          retention-days: 14
+
   docker:
     name: Build and scan images
     runs-on: ubuntu-latest
@@ -96,6 +148,20 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Validate Compose configuration
+        env:
+          POSTGRES_DB: clothify_ci
+          POSTGRES_USER: clothify_ci
+          POSTGRES_PASSWORD: validation-only
+          JWT_SECRET: validation-only
+          GRAFANA_ADMIN_PASSWORD: validation-only
+        run: docker compose --profile monitoring config --quiet
+
+      - name: Validate Prometheus configuration and alert rules
+        run: |
+          docker run --rm --entrypoint promtool -v "$GITHUB_WORKSPACE/monitoring:/etc/prometheus:ro" prom/prometheus:v3.5.0 check config /etc/prometheus/prometheus.yml
+          docker run --rm --entrypoint promtool -v "$GITHUB_WORKSPACE/monitoring:/etc/prometheus:ro" prom/prometheus:v3.5.0 check rules /etc/prometheus/alerts.yml
 
       - name: Build backend image for validation
         uses: docker/build-push-action@v6
@@ -127,6 +193,11 @@ jobs:
             VITE_FIREBASE_MEASUREMENT_ID=${{ vars.VITE_FIREBASE_MEASUREMENT_ID }}
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
+
+      - name: Verify runtime files and Nginx configuration
+        run: |
+          docker run --rm --entrypoint sh clothify-backend:scan -c "test -d /app/database/migrations && test -f /app/scripts/run-migrations.js"
+          docker run --rm --entrypoint nginx clothify-frontend:scan -t
 
       - name: Scan backend image
         uses: aquasecurity/trivy-action@0.28.0
