@@ -2,6 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import app from '../src/app';
 import { metricsApp } from '../src/observability/metrics';
+import { authRateLimiter, generalRateLimiter } from '../src/app';
+import { setShuttingDown } from '../src/utils/lifecycle';
+import { validateStartupConfig } from '../src/config/startup';
+import { startServer } from '../src/server';
 
 const mocks = vi.hoisted(() => ({
   pool: {
@@ -87,6 +91,14 @@ const product = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  setShuttingDown(false);
+  authRateLimiter.resetKey('::ffff:127.0.0.1');
+  authRateLimiter.resetKey('127.0.0.1');
+  authRateLimiter.resetKey('198.51.100.42');
+  generalRateLimiter.resetKey('::ffff:127.0.0.1');
+  generalRateLimiter.resetKey('127.0.0.1');
+  generalRateLimiter.resetKey('198.51.100.42');
+  generalRateLimiter.resetKey('198.51.100.99');
   mocks.pool.query.mockResolvedValue({ rows: [{ '?column?': 1 }], rowCount: 1 });
   mocks.registerUser.mockResolvedValue(user);
   mocks.authenticateUser.mockResolvedValue(user);
@@ -99,6 +111,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  setShuttingDown(false);
   vi.restoreAllMocks();
 });
 
@@ -131,6 +144,16 @@ describe('health and metrics endpoints', () => {
     expect(unavailable.body.database).toBe('disconnected');
   });
 
+  it('returns 503 from readiness while shutdown is in progress', async () => {
+    setShuttingDown(true);
+
+    const response = await request(app).get('/api/health/ready');
+
+    expect(response.status).toBe(503);
+    expect(response.body.message).toBe('Clothify API is shutting down');
+    expect(mocks.pool.query).not.toHaveBeenCalled();
+  });
+
   it('preserves the existing health response format', async () => {
     const response = await request(app).get('/api/health');
 
@@ -155,6 +178,18 @@ describe('health and metrics endpoints', () => {
     expect(metricsResponse.text).toContain('db_pool_total_connections');
     expect(metricsResponse.text).toContain('process_resident_memory_bytes');
     expect(metricsResponse.text).toContain('route="/api/health/live"');
+  });
+
+  it('skips general rate limiting for health checks', async () => {
+    const responses = await Promise.all(
+      Array.from({ length: 6 }, () =>
+        request(app)
+          .get('/api/health/live')
+          .set('X-Forwarded-For', '198.51.100.99')
+      )
+    );
+
+    expect(responses.every((response) => response.status === 200)).toBe(true);
   });
 });
 
@@ -182,8 +217,10 @@ describe('authentication routes', () => {
   it('rejects invalid registration input and duplicate email', async () => {
     const missingEmail = await request(app)
       .post('/api/auth/register')
+      .set('X-Request-Id', 'invalid-register-test')
       .send({ password: 'pass-123' });
     expect(missingEmail.status).toBe(400);
+    expect(missingEmail.body.requestId).toBe('invalid-register-test');
     expect(mocks.registerUser).not.toHaveBeenCalled();
 
     const shortPassword = await request(app)
@@ -219,6 +256,28 @@ describe('authentication routes', () => {
       .send({ email: user.email });
     expect(missingInput.status).toBe(400);
     expect(mocks.authenticateUser).toHaveBeenCalledTimes(2);
+  });
+
+  it('limits repeated authentication attempts and includes the request ID', async () => {
+    const responses = await Promise.all(
+      Array.from({ length: 5 }, (_, index) =>
+        request(app)
+          .post('/api/auth/login')
+          .set('X-Forwarded-For', '198.51.100.42')
+          .set('X-Request-Id', `rate-limit-${index}`)
+          .send({})
+      )
+    );
+    const limitedResponse = responses[4];
+
+    expect(responses.slice(0, 4).every((response) => response.status === 400)).toBe(true);
+    expect(limitedResponse.status).toBe(429);
+    expect(limitedResponse.body).toMatchObject({
+      success: false,
+      message: 'Too many requests',
+      requestId: 'rate-limit-4',
+    });
+    expect(limitedResponse.headers['x-request-id']).toBe('rate-limit-4');
   });
 });
 
@@ -270,5 +329,85 @@ describe('product read routes', () => {
     const missing = await request(app).get('/api/products/missing');
     expect(missing.status).toBe(404);
     expect(missing.body.error).toBe('PRODUCT_NOT_FOUND');
+  });
+});
+
+describe('reliability error handling', () => {
+  it('returns a request-ID-bearing JSON 404 response', async () => {
+    const response = await request(app)
+      .get('/not-a-route')
+      .set('X-Request-Id', 'missing-route-test');
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      success: false,
+      message: 'Route not found',
+      requestId: 'missing-route-test',
+    });
+  });
+
+  it('hides parser error details in production responses', async () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      const response = await request(app)
+        .post('/api/auth/login')
+        .set('Content-Type', 'application/json')
+        .set('X-Request-Id', 'production-error-test')
+        .send('{ invalid json');
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        success: false,
+        message: 'Request failed',
+        requestId: 'production-error-test',
+      });
+      expect(response.text).not.toContain('SyntaxError');
+      expect(response.text).not.toContain('stack');
+    } finally {
+      if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = originalNodeEnv;
+    }
+  });
+
+  it('hides controller error details and includes the request ID in production', async () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    mocks.registerUser.mockRejectedValueOnce(new Error('private database diagnostic'));
+    try {
+      const response = await request(app)
+        .post('/api/auth/register')
+        .set('X-Request-Id', 'controller-error-test')
+        .send({ email: 'customer@example.test', password: 'pass-123' });
+
+      expect(response.status).toBe(500);
+      expect(response.body.requestId).toBe('controller-error-test');
+      expect(response.body.error).toBe('SERVER_ERROR');
+      expect(response.text).not.toContain('private database diagnostic');
+    } finally {
+      if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = originalNodeEnv;
+    }
+  });
+
+  it('rejects missing, short, and placeholder production JWT secrets during startup', async () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    const originalJwtSecret = process.env.JWT_SECRET;
+    process.env.NODE_ENV = 'production';
+    delete process.env.JWT_SECRET;
+
+    try {
+      await expect(startServer()).rejects.toThrow(/JWT_SECRET must be configured/);
+      expect(() => validateStartupConfig()).toThrow(/JWT_SECRET must be configured/);
+      process.env.JWT_SECRET = 'too-short';
+      expect(() => validateStartupConfig()).toThrow(/JWT_SECRET must be configured/);
+      process.env.JWT_SECRET = 'EXAMPLE_ONLY_REPLACE_WITH_A_RANDOM_SECRET_OF_32_PLUS_CHARACTERS';
+      expect(() => validateStartupConfig()).toThrow(/JWT_SECRET must be configured/);
+    } finally {
+      if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = originalNodeEnv;
+      if (originalJwtSecret === undefined) delete process.env.JWT_SECRET;
+      else process.env.JWT_SECRET = originalJwtSecret;
+    }
   });
 });

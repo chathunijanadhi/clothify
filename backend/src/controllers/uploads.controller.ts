@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as cloudinaryService from '../services/cloudinary.service';
-import logger from '../utils/logger';
+import { safeErrorMessage } from '../utils/safeError';
 
 export const upload = async (req: Request, res: Response) => {
   try {
@@ -13,9 +13,9 @@ export const upload = async (req: Request, res: Response) => {
     return res.status(201).json({ success: true, message: 'Image uploaded', data: { url } });
   } catch (err: any) {
     if (err.message === 'CLOUDINARY_NOT_CONFIGURED') {
+      safeErrorMessage(err);
       return res.status(500).json({ success: false, message: 'Cloudinary not configured on server. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET in env.' });
     }
-    logger.error({ err }, 'Upload error');
-    return res.status(500).json({ success: false, message: 'Unable to upload image', error: err.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to upload image', error: safeErrorMessage(err) });
   }
 };

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as cartModel from '../models/cart.model';
+import { safeErrorMessage } from '../utils/safeError';
 
 export const getCart = async (req: Request, res: Response) => {
   try {
@@ -11,7 +12,7 @@ export const getCart = async (req: Request, res: Response) => {
     const cart = await cartModel.getCartByUserId(userId);
     return res.json({ success: true, message: 'Cart retrieved successfully', data: { cart } });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to retrieve cart', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to retrieve cart', error: safeErrorMessage(error) });
   }
 };
 
@@ -44,7 +45,7 @@ export const addItem = async (req: Request, res: Response) => {
     if (error.message === 'INSUFFICIENT_STOCK') {
       return res.status(400).json({ success: false, message: 'Requested quantity exceeds available stock', error: 'INSUFFICIENT_STOCK' });
     }
-    return res.status(500).json({ success: false, message: 'Unable to add item to cart', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to add item to cart', error: safeErrorMessage(error) });
   }
 };
 
@@ -70,7 +71,7 @@ export const updateItem = async (req: Request, res: Response) => {
     if (error.message === 'INSUFFICIENT_STOCK') {
       return res.status(400).json({ success: false, message: 'Requested quantity exceeds available stock', error: 'INSUFFICIENT_STOCK' });
     }
-    return res.status(500).json({ success: false, message: 'Unable to update cart item', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to update cart item', error: safeErrorMessage(error) });
   }
 };
 
@@ -89,7 +90,7 @@ export const removeItem = async (req: Request, res: Response) => {
     const cart = await cartModel.removeCartItem(userId, itemId);
     return res.json({ success: true, message: 'Cart item removed', data: { cart } });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to remove cart item', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to remove cart item', error: safeErrorMessage(error) });
   }
 };
 
@@ -103,6 +104,6 @@ export const clearCart = async (req: Request, res: Response) => {
     const cart = await cartModel.clearCart(userId);
     return res.json({ success: true, message: 'Cart cleared successfully', data: { cart } });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to clear cart', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to clear cart', error: safeErrorMessage(error) });
   }
 };

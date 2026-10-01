@@ -82,3 +82,20 @@ npm run test:coverage
 ```
 
 The backend test suite mocks database-facing services for deterministic health, authentication, and product-route checks. CI additionally starts a PostgreSQL 15 service and applies all migrations before running backend tests. Both test jobs generate text, HTML, and LCOV coverage reports under their respective `coverage` directories; GitHub Actions uploads these reports as `backend-coverage` and `frontend-coverage` artifacts. Coverage thresholds are intentionally set at 1% for the backend and 0.25% for the frontend as starting floors while the suites are expanded.
+
+## Reliability
+
+The backend stops accepting new requests on `SIGTERM`/`SIGINT`, lets active requests finish, then closes the PostgreSQL pool. Its shutdown deadline defaults to 10 seconds; Docker Compose allows 15 seconds before force-stopping the backend. Startup validates production `JWT_SECRET` configuration and retries the initial PostgreSQL connection with capped exponential backoff. Readiness returns 503 during shutdown or when PostgreSQL is unavailable.
+
+Helmet is enabled, request bodies default to a 1 MB limit, and requests have a 30-second timeout. A general limiter defaults to 300 requests per 15 minutes, with login/register limited to 10 requests per 15 minutes. `/api/health` and `/api/health/*` are exempt. The API currently serves browser requests directly rather than proxying them through frontend Nginx, so `TRUST_PROXY=0` is the safe default; set it to the exact trusted proxy hop count (commonly `1`) only when deploying behind a reverse proxy.
+
+New runtime settings (also listed in the root and backend `.env.example` files):
+
+- `SHUTDOWN_TIMEOUT_MS`, `REQUEST_TIMEOUT_MS`, `REQUEST_BODY_LIMIT`
+- `TRUST_PROXY`
+- `DB_POOL_MAX`, `DB_IDLE_TIMEOUT_MS`, `DB_CONNECTION_TIMEOUT_MS`, `DB_STATEMENT_TIMEOUT_MS`
+- `DB_CONNECT_MAX_ATTEMPTS`, `DB_CONNECT_RETRY_BASE_DELAY_MS`
+- `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX`
+- `AUTH_RATE_LIMIT_WINDOW_MS`, `AUTH_RATE_LIMIT_MAX`
+
+When using the root Compose `.env`, replace the `JWT_SECRET` example with a unique random secret of at least 32 characters before starting the production-mode backend.

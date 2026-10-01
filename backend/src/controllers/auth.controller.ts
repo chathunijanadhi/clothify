@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import * as authService from '../services/auth.service';
 import jwt from 'jsonwebtoken';
 import { toPublic, findOrCreateFirebaseUser } from '../models/user.model';
-import logger from '../utils/logger';
+import { safeErrorMessage } from '../utils/safeError';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_me_for_development_only';
 const JWT_EXPIRES_IN = '7d';
@@ -25,8 +25,7 @@ export const register = async (req: Request, res: Response) => {
     if (err.message === 'EMAIL_ALREADY_REGISTERED') {
       return res.status(409).json({ success: false, message: 'Email already registered', error: 'EMAIL_ALREADY_REGISTERED' });
     }
-    logger.error({ err }, 'Register error');
-    return res.status(500).json({ success: false, message: 'Unable to register user', error: err.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to register user', error: safeErrorMessage(err) });
   }
 };
 
@@ -44,8 +43,7 @@ export const login = async (req: Request, res: Response) => {
     if (err.message === 'INVALID_CREDENTIALS') {
       return res.status(401).json({ success: false, message: 'Invalid credentials', error: 'INVALID_CREDENTIALS' });
     }
-    logger.error({ err }, 'Login error');
-    return res.status(500).json({ success: false, message: 'Unable to login', error: err.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to login', error: safeErrorMessage(err) });
   }
 };
 
@@ -59,8 +57,7 @@ export const me = async (req: Request, res: Response) => {
 
     return res.json({ success: true, message: 'User profile retrieved', data: { user: toPublic(user) } });
   } catch (err: any) {
-    logger.error({ err }, 'Me error');
-    return res.status(500).json({ success: false, message: 'Unable to retrieve profile', error: err.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to retrieve profile', error: safeErrorMessage(err) });
   }
 };
 
@@ -81,7 +78,6 @@ export const firebaseAuth = async (req: Request, res: Response) => {
 
     return res.json({ success: true, message: 'Firebase authentication successful', data: { user: toPublic(user), token } });
   } catch (err: any) {
-    logger.error({ err }, 'Firebase auth error');
-    return res.status(500).json({ success: false, message: 'Unable to authenticate with Firebase', error: err.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to authenticate with Firebase', error: safeErrorMessage(err) });
   }
 };

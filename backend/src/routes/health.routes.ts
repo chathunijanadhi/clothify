@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import pool from '../config/database';
+import { isShuttingDown } from '../utils/lifecycle';
 
 const router = Router();
 
@@ -8,6 +9,10 @@ router.get('/live', (_req: Request, res: Response) => {
 });
 
 router.get('/ready', async (_req: Request, res: Response) => {
+  if (isShuttingDown()) {
+    return res.status(503).json({ success: true, message: 'Clothify API is shutting down', database: 'disconnected' });
+  }
+
   let timeout: NodeJS.Timeout | undefined;
 
   try {

@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import * as orderModel from '../models/order.model';
+import { safeErrorMessage } from '../utils/safeError';
 
 export const createOrder = async (req: Request, res: Response) => {
   try {
@@ -38,7 +39,7 @@ export const createOrder = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: 'One or more items exceed the available stock', error: 'INSUFFICIENT_STOCK' });
     }
 
-    return res.status(500).json({ success: false, message: 'Unable to place order', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to place order', error: safeErrorMessage(error) });
   }
 };
 
@@ -52,7 +53,7 @@ export const getMyOrders = async (req: Request, res: Response) => {
     const orders = await orderModel.getOrdersByUser(userId);
     return res.json({ success: true, message: 'Orders retrieved successfully', data: { orders } });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to load orders', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to load orders', error: safeErrorMessage(error) });
   }
 };
 
@@ -75,6 +76,6 @@ export const getMyOrder = async (req: Request, res: Response) => {
 
     return res.json({ success: true, message: 'Order retrieved successfully', data: { order } });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to load order', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to load order', error: safeErrorMessage(error) });
   }
 };

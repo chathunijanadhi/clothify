@@ -5,3 +5,6 @@ process.env.DB_PASSWORD = 'clothify-test-only';
 process.env.DB_DATABASE = 'clothify_test';
 process.env.JWT_SECRET = 'clothify-vitest-dummy-secret';
 process.env.LOG_LEVEL = 'silent';
+process.env.AUTH_RATE_LIMIT_MAX = '4';
+process.env.RATE_LIMIT_MAX = '5';
+process.env.TRUST_PROXY = '1';
