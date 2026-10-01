@@ -1,0 +1,218 @@
+name: Clothify CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - ".dockerignore"
+      - ".env.example"
+      - "docker-compose.yml"
+      - ".github/workflows/ci-cd.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - ".dockerignore"
+      - ".env.example"
+      - "docker-compose.yml"
+      - ".github/workflows/ci-cd.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Build
+        working-directory: backend
+        run: npm run build
+
+      - name: Test
+        working-directory: backend
+        run: npm test
+
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+  docker:
+    name: Build and scan images
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image for validation
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          load: true
+          push: false
+          tags: clothify-backend:scan
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Build frontend image for validation
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          load: true
+          push: false
+          tags: clothify-frontend:scan
+          build-args: |
+            VITE_API_URL=${{ vars.VITE_API_URL }}
+            VITE_FIREBASE_API_KEY=${{ vars.VITE_FIREBASE_API_KEY }}
+            VITE_FIREBASE_AUTH_DOMAIN=${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
+            VITE_FIREBASE_PROJECT_ID=${{ vars.VITE_FIREBASE_PROJECT_ID }}
+            VITE_FIREBASE_STORAGE_BUCKET=${{ vars.VITE_FIREBASE_STORAGE_BUCKET }}
+            VITE_FIREBASE_MESSAGING_SENDER_ID=${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+            VITE_FIREBASE_APP_ID=${{ vars.VITE_FIREBASE_APP_ID }}
+            VITE_FIREBASE_MEASUREMENT_ID=${{ vars.VITE_FIREBASE_MEASUREMENT_ID }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: clothify-backend:scan
+          scan-type: image
+          format: table
+          severity: CRITICAL
+          exit-code: "1"
+
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: clothify-frontend:scan
+          scan-type: image
+          format: table
+          severity: CRITICAL
+          exit-code: "1"
+
+      - name: Save validated images for publishing
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          set -o pipefail
+          docker save clothify-backend:scan clothify-frontend:scan | gzip > clothify-images.tar.gz
+
+      - name: Upload validated images
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: clothify-images
+          path: clothify-images.tar.gz
+          retention-days: 1
+
+  publish:
+    name: Publish validated images to GHCR
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: none
+      packages: write
+    steps:
+      - name: Download validated images
+        uses: actions/download-artifact@v4
+        with:
+          name: clothify-images
+
+      - name: Load validated images
+        run: |
+          set -o pipefail
+          gzip -dc clothify-images.tar.gz | docker load
+
+      - name: Define image names
+        id: image-names
+        shell: bash
+        run: |
+          repository="${GITHUB_REPOSITORY,,}"
+          echo "backend=ghcr.io/${repository}-backend" >> "$GITHUB_OUTPUT"
+          echo "frontend=ghcr.io/${repository}-frontend" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push backend image
+        env:
+          IMAGE_NAME: ${{ steps.image-names.outputs.backend }}
+          IMAGE_SHA: ${{ github.sha }}
+        run: |
+          docker tag clothify-backend:scan "$IMAGE_NAME:$IMAGE_SHA"
+          docker tag clothify-backend:scan "$IMAGE_NAME:latest"
+          docker push "$IMAGE_NAME:$IMAGE_SHA"
+          docker push "$IMAGE_NAME:latest"
+
+      - name: Push frontend image
+        env:
+          IMAGE_NAME: ${{ steps.image-names.outputs.frontend }}
+          IMAGE_SHA: ${{ github.sha }}
+        run: |
+          docker tag clothify-frontend:scan "$IMAGE_NAME:$IMAGE_SHA"
+          docker tag clothify-frontend:scan "$IMAGE_NAME:latest"
+          docker push "$IMAGE_NAME:$IMAGE_SHA"
+          docker push "$IMAGE_NAME:latest"
+
+      - name: Deployment placeholder
+        run: echo "::notice::Deployment is intentionally not configured yet."

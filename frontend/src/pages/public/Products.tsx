@@ -17,8 +17,7 @@ import type { UIProduct, Product as BackendProduct } from '../../types/product.t
 import * as productService from '../../services/product.service';
 import { Loader } from '../../components/common/Loader';
 
-const SEGMENTS = ['All', 'Men', 'Women', 'Kids'] as const;
-type SegmentType = (typeof SEGMENTS)[number];
+type SegmentType = 'All' | 'Men' | 'Women' | 'Kids';
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 const segmentLabel = (segment: SegmentType) => (segment === 'Kids' ? "Kids'" : `${segment}'s`);
