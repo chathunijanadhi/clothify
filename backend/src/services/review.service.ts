@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import pool from '../config/database';
+import logger from '../utils/logger';
 
 // Ensure schema is updated for store feedback and home page featuring
 (async () => {
@@ -13,7 +14,7 @@ import pool from '../config/database';
     `);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('Reviews schema check notice:', msg);
+    logger.warn({ error: msg }, 'Reviews schema check failed');
   }
 })();
 
@@ -338,4 +339,3 @@ export const getUserReviews = async (userId: string): Promise<any[]> => {
     createdAt: row.created_at,
   }));
 };
-

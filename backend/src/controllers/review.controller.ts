@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as reviewService from '../services/review.service';
+import logger from '../utils/logger';
 
 export const getFeaturedReviews = async (req: Request, res: Response) => {
   try {
@@ -7,7 +8,7 @@ export const getFeaturedReviews = async (req: Request, res: Response) => {
     const reviews = await reviewService.getFeaturedReviews(limit);
     return res.json({ success: true, data: { reviews } });
   } catch (error: any) {
-    console.error('Error fetching featured reviews:', error);
+    logger.error({ err: error }, 'Error fetching featured reviews');
     return res.status(500).json({ success: false, message: 'Unable to load featured reviews', error: error.message });
   }
 };
@@ -18,7 +19,7 @@ export const getProductReviews = async (req: Request, res: Response) => {
     const reviews = await reviewService.getReviewsByProduct(productId);
     return res.json({ success: true, data: { reviews } });
   } catch (error: any) {
-    console.error('Error fetching product reviews:', error);
+    logger.error({ err: error }, 'Error fetching product reviews');
     return res.status(500).json({ success: false, message: 'Unable to load reviews', error: error.message });
   }
 };
@@ -34,7 +35,7 @@ export const getMyReview = async (req: Request, res: Response) => {
     const data = await reviewService.getUserReview(userId, productId);
     return res.json({ success: true, data });
   } catch (error: any) {
-    console.error('Error fetching user review:', error);
+    logger.error({ err: error }, 'Error fetching user review');
     return res.status(500).json({ success: false, message: 'Unable to load user review', error: error.message });
   }
 };
@@ -68,7 +69,7 @@ export const createReview = async (req: Request, res: Response) => {
       data: { review },
     });
   } catch (error: any) {
-    console.error('Error submitting review:', error);
+    logger.error({ err: error }, 'Error submitting review');
     return res.status(500).json({ success: false, message: 'Unable to submit review', error: error.message });
   }
 };
@@ -105,7 +106,7 @@ export const createFeedback = async (req: Request, res: Response) => {
       data: { review },
     });
   } catch (error: any) {
-    console.error('Error submitting feedback:', error);
+    logger.error({ err: error }, 'Error submitting feedback');
     return res.status(500).json({ success: false, message: 'Unable to record feedback', error: error.message });
   }
 };
@@ -120,7 +121,7 @@ export const getMyReviews = async (req: Request, res: Response) => {
     const reviews = await reviewService.getUserReviews(userId);
     return res.json({ success: true, data: { reviews } });
   } catch (error: any) {
-    console.error('Error fetching user feedback history:', error);
+    logger.error({ err: error }, 'Error fetching user feedback history');
     return res.status(500).json({ success: false, message: 'Unable to load your feedback history', error: error.message });
   }
 };
@@ -134,7 +135,7 @@ export const getAllReviewsAdmin = async (req: Request, res: Response) => {
     const reviews = await reviewService.getAllReviewsForAdmin({ rating, isFeatured, search });
     return res.json({ success: true, data: { reviews } });
   } catch (error: any) {
-    console.error('Error in getAllReviewsAdmin:', error);
+    logger.error({ err: error }, 'Error in getAllReviewsAdmin');
     return res.status(500).json({ success: false, message: 'Unable to load reviews for admin', error: error.message });
   }
 };
@@ -155,7 +156,7 @@ export const toggleFeaturedAdmin = async (req: Request, res: Response) => {
       data: { review },
     });
   } catch (error: any) {
-    console.error('Error toggling featured review:', error);
+    logger.error({ err: error }, 'Error toggling featured review');
     return res.status(500).json({ success: false, message: 'Unable to update review feature status', error: error.message });
   }
 };
@@ -166,8 +167,7 @@ export const deleteReviewAdmin = async (req: Request, res: Response) => {
     await reviewService.deleteReview(reviewId);
     return res.json({ success: true, message: 'Review successfully removed.' });
   } catch (error: any) {
-    console.error('Error deleting review:', error);
+    logger.error({ err: error }, 'Error deleting review');
     return res.status(500).json({ success: false, message: 'Unable to delete review', error: error.message });
   }
 };
-

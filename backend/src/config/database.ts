@@ -1,7 +1,7 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const databaseUrl = process.env.HostDatabase || process.env.DATABASE_URL;
 const hasDatabaseUrl = Boolean(databaseUrl);
