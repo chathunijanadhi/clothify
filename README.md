@@ -4,7 +4,7 @@ Clothify is split into independent frontend and backend npm projects. See [backe
 
 ## Run with Docker
 
-Install Docker Desktop or Docker Engine with the Docker Compose plugin. Create a root `.env` from `.env.example` and provide values for `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `JWT_SECRET`. Set the `VITE_FIREBASE_*` variables only if enabling Firebase authentication; the API URL defaults to `http://localhost:5000/api`.
+Install Docker Desktop or Docker Engine with the Docker Compose plugin. Create a root `.env` from `.env.example` and provide values for `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `JWT_SECRET`. Set the `VITE_FIREBASE_*` variables only if enabling Firebase authentication; these are bundled into public browser assets, so never put server secrets there. The API URL defaults to `http://localhost:5000/api`.
 
 ```powershell
 Copy-Item .env.example .env
@@ -38,3 +38,64 @@ Push / pull request to main
              |
     Deployment placeholder
 ```
+
+## Observability
+
+Logging, live/ready health checks, Prometheus metrics, and a pre-provisioned Grafana dashboard are included. The default Compose stack does not start monitoring services. Set `LOG_LEVEL` as needed (`info` is the default), and set a strong `GRAFANA_ADMIN_PASSWORD` in the root `.env` before starting the monitoring profile.
+
+```powershell
+docker compose --profile monitoring up --build -d
+Invoke-RestMethod http://localhost:5000/api/health/live
+Invoke-RestMethod http://localhost:5000/api/health/ready
+Invoke-WebRequest http://localhost:9090/-/healthy
+Invoke-WebRequest http://localhost:3000/api/health
+```
+
+Open Prometheus at `http://localhost:9090` and Grafana at `http://localhost:3000` (Grafana user: `admin`; use `GRAFANA_ADMIN_PASSWORD` from `.env`). Both monitoring UIs are bound to loopback only. Prometheus scrapes `http://backend:9464/metrics` over a dedicated internal Compose network; port `9464` is not published to the host and `/metrics` is deliberately absent from the public API. Use the Prometheus UI or Grafana dashboard to inspect those metrics. The frontend Nginx explicitly returns 404 for `/metrics`.
+
+Each backend request produces a JSON log with method, route pattern, response status, duration, and request ID. The API reuses an incoming `X-Request-Id` or generates one and returns it in the response header. `LOG_LEVEL` controls verbosity. Sensitive password, token, authorization, and cookie fields are redacted.
+
+The dashboard's `http_requests_total` request rate is requests per second; `http_request_duration_seconds` is a duration histogram used to calculate p95 latency; the 5xx panel is the percentage of server-error responses. `process_resident_memory_bytes` reports Node.js process resident memory and process CPU counters are converted to CPU cores per second. `db_pool_total_connections`, `db_pool_idle_connections`, and `db_pool_waiting_requests` report PostgreSQL pool usage.
+
+Prometheus evaluates three alert rules (without a notifier): `BackendDown` fires when the backend is unreachable for 1 minute; `BackendHigh5xxRate` fires when the 5xx ratio exceeds 5% for 5 minutes; and `BackendHighP95Latency` fires when p95 request duration exceeds 1 second for 5 minutes. The rules are visible in Prometheus but are not delivered to email/chat until an Alertmanager/notifier is configured.
+
+Run backend observability checks with:
+
+```powershell
+Set-Location backend
+npm test
+npm run build
+```
+
+## Testing
+
+Run the backend unit and API tests with coverage, then run the frontend component and service tests with coverage:
+
+```powershell
+Set-Location backend
+npm ci
+npm run test:coverage
+
+Set-Location ..\frontend
+npm ci
+npm run test:coverage
+```
+
+The backend test suite mocks database-facing services for deterministic health, authentication, and product-route checks. CI additionally starts a PostgreSQL 15 service and applies all migrations before running backend tests. Both test jobs generate text, HTML, and LCOV coverage reports under their respective `coverage` directories; GitHub Actions uploads these reports as `backend-coverage` and `frontend-coverage` artifacts. Coverage thresholds are intentionally set at 1% for the backend and 0.25% for the frontend as starting floors while the suites are expanded.
+
+## Reliability
+
+The backend stops accepting new requests on `SIGTERM`/`SIGINT`, lets active requests finish, then closes the PostgreSQL pool. Its shutdown deadline defaults to 10 seconds; Docker Compose allows 15 seconds before force-stopping the backend. Startup validates production `JWT_SECRET` configuration and retries the initial PostgreSQL connection with capped exponential backoff. Readiness returns 503 during shutdown or when PostgreSQL is unavailable.
+
+Helmet is enabled, request bodies default to a 1 MB limit, and requests have a 30-second timeout. A general limiter defaults to 300 requests per 15 minutes, with login/register limited to 10 requests per 15 minutes. `/api/health` and `/api/health/*` are exempt. The API currently serves browser requests directly rather than proxying them through frontend Nginx, so `TRUST_PROXY=0` is the safe default; set it to the exact trusted proxy hop count (commonly `1`) only when deploying behind a reverse proxy.
+
+New runtime settings (also listed in the root and backend `.env.example` files):
+
+- `SHUTDOWN_TIMEOUT_MS`, `REQUEST_TIMEOUT_MS`, `REQUEST_BODY_LIMIT`
+- `TRUST_PROXY`
+- `DB_POOL_MAX`, `DB_IDLE_TIMEOUT_MS`, `DB_CONNECTION_TIMEOUT_MS`, `DB_STATEMENT_TIMEOUT_MS`
+- `DB_CONNECT_MAX_ATTEMPTS`, `DB_CONNECT_RETRY_BASE_DELAY_MS`
+- `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX`
+- `AUTH_RATE_LIMIT_WINDOW_MS`, `AUTH_RATE_LIMIT_MAX`
+
+When using the root Compose `.env`, replace the `JWT_SECRET` example with a unique random secret of at least 32 characters before starting the production-mode backend.

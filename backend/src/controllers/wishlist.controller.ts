@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as wishlistModel from '../models/wishlist.model';
+import { safeErrorMessage } from '../utils/safeError';
 
 export const getWishlist = async (req: Request, res: Response) => {
   try {
@@ -11,7 +12,7 @@ export const getWishlist = async (req: Request, res: Response) => {
     const wishlist = await wishlistModel.getWishlistByUserId(userId);
     return res.json({ success: true, message: 'Wishlist retrieved successfully', data: { wishlist } });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to retrieve wishlist', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to retrieve wishlist', error: safeErrorMessage(error) });
   }
 };
 
@@ -33,7 +34,7 @@ export const addItem = async (req: Request, res: Response) => {
     if (error.message === 'PRODUCT_NOT_FOUND') {
       return res.status(404).json({ success: false, message: 'Product not found', error: 'PRODUCT_NOT_FOUND' });
     }
-    return res.status(500).json({ success: false, message: 'Unable to add item to wishlist', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to add item to wishlist', error: safeErrorMessage(error) });
   }
 };
 
@@ -52,6 +53,6 @@ export const removeItem = async (req: Request, res: Response) => {
     const wishlist = await wishlistModel.removeItemFromWishlist(userId, productId);
     return res.json({ success: true, message: 'Item removed from wishlist', data: { wishlist } });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to remove wishlist item', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to remove wishlist item', error: safeErrorMessage(error) });
   }
 };

@@ -3,6 +3,7 @@
    CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 */
 import pool from '../config/database';
+import logger from '../utils/logger';
 
 // use require to avoid type package issues
 const cloudinary = require('cloudinary').v2;
@@ -25,7 +26,7 @@ export async function uploadImage(dataUrl: string, folder = 'clothify') {
     const res = await cloudinary.uploader.upload(dataUrl, { folder, allowed_formats: ['jpg', 'png', 'jpeg', 'webp'] });
     return res.secure_url as string;
   } catch (err: any) {
-    console.error('Cloudinary upload failed', err);
+    logger.error({ err }, 'Cloudinary upload failed');
     throw new Error(err?.message || 'CLOUDINARY_UPLOAD_FAILED');
   }
 }

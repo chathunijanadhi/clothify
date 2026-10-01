@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import pool from '../config/database';
 import { clearCart, getCartByUserId } from './cart.model';
+import logger from '../utils/logger';
 
 export type OrderPaymentMethod = 'card' | 'bank_transfer';
 
@@ -122,7 +123,7 @@ export const createOrder = async (userId: string, payload: CreateOrderPayload = 
         slipImageUrl = payload.slipImage;
       }
     } catch (err) {
-      console.error('Slip upload failed', err);
+      logger.error({ err }, 'Slip upload failed');
       // proceed but store original data as fallback
       slipImageUrl = payload.slipImage ?? null;
     }

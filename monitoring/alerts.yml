@@ -1,0 +1,38 @@
+groups:
+  - name: clothify-backend
+    rules:
+      - alert: BackendDown
+        expr: up{job="clothify-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Clothify backend metrics endpoint is down
+          description: Prometheus has been unable to scrape the backend for one minute.
+
+      - alert: BackendHigh5xxRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="clothify-backend", status_code=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_requests_total{job="clothify-backend"}[5m])), 1e-9)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Backend 5xx rate is above 5%
+          description: More than 5% of backend requests have returned 5xx responses for five minutes.
+
+      - alert: BackendHighP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(http_request_duration_seconds_bucket{job="clothify-backend"}[5m]))
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Backend p95 latency is above one second
+          description: The backend request p95 latency has exceeded one second for five minutes.

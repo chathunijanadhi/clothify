@@ -5,7 +5,8 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { Pool } = require('pg');
 
-require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '..', '.env'), quiet: true });
+const logger = require('./logger');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
@@ -57,13 +58,13 @@ async function seedAdmin() {
       [id, ADMIN_NAME, ADMIN_EMAIL, passwordHash]
     );
 
-    console.log('Admin seed complete:', result.rows[0]);
+    logger.info({ user: result.rows[0] }, 'Admin seed complete');
   } finally {
     await pool.end();
   }
 }
 
 seedAdmin().catch((error) => {
-  console.error('Admin seed failed:', error.message || error);
+  logger.error({ err: error }, 'Admin seed failed');
   process.exitCode = 1;
 });

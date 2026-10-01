@@ -2,7 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
-require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '..', '.env'), quiet: true });
+const logger = require('./logger');
 
 function getDatabaseConfig() {
   const connectionString = process.env.HostDatabase || process.env.DATABASE_URL;
@@ -72,29 +73,29 @@ async function run() {
     pool = new Pool(config);
     const connection = await pool.connect();
     connection.release();
-    console.log('Connected to PostgreSQL database.');
+    logger.info('Connected to PostgreSQL database');
 
     const migrationsDir = path.resolve(__dirname, '..', 'database', 'migrations');
     const files = fs.readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort();
 
-    console.log('Migrations detected:', files);
+    logger.info({ migrations: files }, 'Migrations detected');
 
     if (files.length === 0) {
-      console.log('No migration files found in', migrationsDir);
+      logger.info({ migrationsDir }, 'No migration files found');
       return;
     }
 
     // Ensure schema_migrations exists
     await ensureSchemaMigrations(pool);
     const applied = await getAppliedMigrations(pool);
-    console.log('Migrations already recorded in schema_migrations:', applied);
+    logger.info({ migrations: applied }, 'Migrations already recorded');
 
     const skipped = [];
     const appliedNow = [];
 
     for (const file of files) {
       if (applied.includes(file)) {
-        console.log('Skipping already-applied migration (recorded):', file);
+        logger.info({ migration: file }, 'Skipping already-applied migration');
         skipped.push(file);
         continue;
       }
@@ -116,7 +117,7 @@ async function run() {
 
       if (createTables.length > 0 && allExist) {
         // safest path: mark as applied without running SQL
-        console.log(`Migration ${file} appears to create tables that already exist (${createTables.join(', ')}). Recording as applied without executing.`);
+        logger.info({ migration: file, tables: createTables }, 'Migration tables already exist; recording without execution');
         await pool.query('INSERT INTO schema_migrations (migration) VALUES ($1) ON CONFLICT DO NOTHING', [file]);
         skipped.push(file);
         continue;
@@ -125,16 +126,16 @@ async function run() {
       // Otherwise run migration in transaction and record on success
       const client = await pool.connect();
       try {
-        console.log('Applying', file);
+        logger.info({ migration: file }, 'Applying migration');
         await client.query('BEGIN');
         await client.query(sql);
         await client.query('COMMIT');
         await markMigrationApplied(client, file);
-        console.log('Applied and recorded', file);
+        logger.info({ migration: file }, 'Migration applied and recorded');
         appliedNow.push(file);
       } catch (err) {
         await client.query('ROLLBACK');
-        console.error('Failed to apply', file, err.message || err);
+        logger.error({ err, migration: file }, 'Failed to apply migration');
         throw err;
       } finally {
         client.release();
@@ -144,20 +145,17 @@ async function run() {
     const finalApplied = await getAppliedMigrations(pool);
 
     const res = await pool.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name;");
-    console.log('Public tables:');
-    res.rows.forEach((row) => console.log(' -', row.table_name));
-
-    console.log('Summary:');
-    console.log(' - migrations detected:', files.length);
-    console.log(' - migrations recorded before run:', applied.length);
-    console.log(' - migrations executed now:', appliedNow.length, appliedNow);
-    console.log(' - migrations skipped/marked-applied without execution:', skipped.length, skipped);
-    console.log(' - total migrations recorded after run:', finalApplied.length);
-    console.log('No existing tables were dropped by this run (no DROP TABLE was executed by this script).');
-
-    console.log('Migrations complete.');
+    logger.info({ tables: res.rows.map((row) => row.table_name) }, 'Public tables');
+    logger.info({
+      detected: files.length,
+      previouslyRecorded: applied.length,
+      executedNow: appliedNow,
+      skipped: skipped,
+      totalRecorded: finalApplied.length,
+    }, 'Migration summary');
+    logger.info('Migrations complete');
   } catch (err) {
-    console.error('Migration run failed:', err.message || err);
+    logger.error({ err }, 'Migration run failed');
     process.exitCode = 1;
   } finally {
     if (pool) {

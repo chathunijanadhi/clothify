@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import pool from '../config/database';
+import logger from '../utils/logger';
 
 // Ensure database schema compatibility: create 'segment' column if it's missing.
 // This makes upgrading the running app simpler without requiring a manual migration step.
@@ -9,7 +10,7 @@ import pool from '../config/database';
   } catch (err) {
     // Log but don't fail startup — operations can proceed and errors will surface on queries.
     const message = err instanceof Error ? err.message : String(err);
-    console.error('Warning: failed to ensure products.segment column exists', message);
+    logger.warn({ error: message }, 'Failed to ensure products.segment column exists');
   }
 })();
 

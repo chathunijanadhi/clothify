@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import pool from '../config/database';
 import * as orderModel from '../models/order.model';
 import * as productService from '../services/product.service';
+import { safeErrorMessage } from '../utils/safeError';
 
 export const getSummary = async (_req: Request, res: Response) => {
   try {
@@ -27,7 +28,7 @@ export const getSummary = async (_req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to load admin summary', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to load admin summary', error: safeErrorMessage(error) });
   }
 };
 
@@ -39,7 +40,7 @@ export const getCustomers = async (_req: Request, res: Response) => {
 
     return res.json({ success: true, message: 'Customers retrieved successfully', data: { customers: result.rows } });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to load customers', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to load customers', error: safeErrorMessage(error) });
   }
 };
 
@@ -73,7 +74,7 @@ export const getOrders = async (_req: Request, res: Response) => {
 
     return res.json({ success: true, message: 'Orders retrieved successfully', data: { orders } });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to load orders', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to load orders', error: safeErrorMessage(error) });
   }
 };
 
@@ -118,7 +119,7 @@ export const getPayments = async (_req: Request, res: Response) => {
 
     return res.json({ success: true, message: 'Payments retrieved successfully', data: { payments } });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to load payments', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to load payments', error: safeErrorMessage(error) });
   }
 };
 
@@ -148,7 +149,7 @@ export const updatePaymentStatus = async (req: Request, res: Response) => {
       data: updated,
     });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to update payment status', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to update payment status', error: safeErrorMessage(error) });
   }
 };
 
@@ -181,7 +182,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       data: { order: result.rows[0] },
     });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to update order status', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to update order status', error: safeErrorMessage(error) });
   }
 };
 
@@ -221,6 +222,6 @@ export const getCatalog = async (_req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to load catalog', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to load catalog', error: safeErrorMessage(error) });
   }
 };

@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
 import * as productService from '../services/product.service';
+import { safeErrorMessage } from '../utils/safeError';
 
 export const getCategories = async (req: Request, res: Response) => {
   try {
     const categories = await productService.listCategories();
     return res.json({ success: true, message: 'Categories retrieved successfully', data: { categories } });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to load categories', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to load categories', error: safeErrorMessage(error) });
   }
 };
 
@@ -73,7 +74,7 @@ export const getProducts = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to retrieve products', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to retrieve products', error: safeErrorMessage(error) });
   }
 };
 
@@ -103,7 +104,7 @@ export const getProductById = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to retrieve product', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to retrieve product', error: safeErrorMessage(error) });
   }
 };
 
@@ -143,7 +144,7 @@ export const createProduct = async (req: Request, res: Response) => {
     if (error.message === 'CATEGORY_NOT_FOUND') {
       return res.status(400).json({ success: false, message: 'Category not found', error: 'CATEGORY_NOT_FOUND' });
     }
-    return res.status(500).json({ success: false, message: 'Unable to create product', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to create product', error: safeErrorMessage(error) });
   }
 };
 
@@ -173,7 +174,7 @@ export const updateProduct = async (req: Request, res: Response) => {
 
     return res.json({ success: true, message: 'Product updated successfully', data: { product } });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to update product', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to update product', error: safeErrorMessage(error) });
   }
 };
 
@@ -187,7 +188,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
 
     return res.json({ success: true, message: 'Product deleted successfully' });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Unable to delete product', error: error.message || 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'Unable to delete product', error: safeErrorMessage(error) });
   }
 };
 

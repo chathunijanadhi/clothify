@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as reviewService from '../services/review.service';
+import { safeErrorMessage } from '../utils/safeError';
 
 export const getFeaturedReviews = async (req: Request, res: Response) => {
   try {
@@ -7,8 +8,7 @@ export const getFeaturedReviews = async (req: Request, res: Response) => {
     const reviews = await reviewService.getFeaturedReviews(limit);
     return res.json({ success: true, data: { reviews } });
   } catch (error: any) {
-    console.error('Error fetching featured reviews:', error);
-    return res.status(500).json({ success: false, message: 'Unable to load featured reviews', error: error.message });
+    return res.status(500).json({ success: false, message: 'Unable to load featured reviews', error: safeErrorMessage(error) });
   }
 };
 
@@ -18,8 +18,7 @@ export const getProductReviews = async (req: Request, res: Response) => {
     const reviews = await reviewService.getReviewsByProduct(productId);
     return res.json({ success: true, data: { reviews } });
   } catch (error: any) {
-    console.error('Error fetching product reviews:', error);
-    return res.status(500).json({ success: false, message: 'Unable to load reviews', error: error.message });
+    return res.status(500).json({ success: false, message: 'Unable to load reviews', error: safeErrorMessage(error) });
   }
 };
 
@@ -34,8 +33,7 @@ export const getMyReview = async (req: Request, res: Response) => {
     const data = await reviewService.getUserReview(userId, productId);
     return res.json({ success: true, data });
   } catch (error: any) {
-    console.error('Error fetching user review:', error);
-    return res.status(500).json({ success: false, message: 'Unable to load user review', error: error.message });
+    return res.status(500).json({ success: false, message: 'Unable to load user review', error: safeErrorMessage(error) });
   }
 };
 
@@ -68,8 +66,7 @@ export const createReview = async (req: Request, res: Response) => {
       data: { review },
     });
   } catch (error: any) {
-    console.error('Error submitting review:', error);
-    return res.status(500).json({ success: false, message: 'Unable to submit review', error: error.message });
+    return res.status(500).json({ success: false, message: 'Unable to submit review', error: safeErrorMessage(error) });
   }
 };
 
@@ -105,8 +102,7 @@ export const createFeedback = async (req: Request, res: Response) => {
       data: { review },
     });
   } catch (error: any) {
-    console.error('Error submitting feedback:', error);
-    return res.status(500).json({ success: false, message: 'Unable to record feedback', error: error.message });
+    return res.status(500).json({ success: false, message: 'Unable to record feedback', error: safeErrorMessage(error) });
   }
 };
 
@@ -120,8 +116,7 @@ export const getMyReviews = async (req: Request, res: Response) => {
     const reviews = await reviewService.getUserReviews(userId);
     return res.json({ success: true, data: { reviews } });
   } catch (error: any) {
-    console.error('Error fetching user feedback history:', error);
-    return res.status(500).json({ success: false, message: 'Unable to load your feedback history', error: error.message });
+    return res.status(500).json({ success: false, message: 'Unable to load your feedback history', error: safeErrorMessage(error) });
   }
 };
 
@@ -134,8 +129,7 @@ export const getAllReviewsAdmin = async (req: Request, res: Response) => {
     const reviews = await reviewService.getAllReviewsForAdmin({ rating, isFeatured, search });
     return res.json({ success: true, data: { reviews } });
   } catch (error: any) {
-    console.error('Error in getAllReviewsAdmin:', error);
-    return res.status(500).json({ success: false, message: 'Unable to load reviews for admin', error: error.message });
+    return res.status(500).json({ success: false, message: 'Unable to load reviews for admin', error: safeErrorMessage(error) });
   }
 };
 
@@ -155,8 +149,7 @@ export const toggleFeaturedAdmin = async (req: Request, res: Response) => {
       data: { review },
     });
   } catch (error: any) {
-    console.error('Error toggling featured review:', error);
-    return res.status(500).json({ success: false, message: 'Unable to update review feature status', error: error.message });
+    return res.status(500).json({ success: false, message: 'Unable to update review feature status', error: safeErrorMessage(error) });
   }
 };
 
@@ -166,8 +159,6 @@ export const deleteReviewAdmin = async (req: Request, res: Response) => {
     await reviewService.deleteReview(reviewId);
     return res.json({ success: true, message: 'Review successfully removed.' });
   } catch (error: any) {
-    console.error('Error deleting review:', error);
-    return res.status(500).json({ success: false, message: 'Unable to delete review', error: error.message });
+    return res.status(500).json({ success: false, message: 'Unable to delete review', error: safeErrorMessage(error) });
   }
 };
-
